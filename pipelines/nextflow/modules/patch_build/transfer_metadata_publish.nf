@@ -15,7 +15,7 @@
 
 process TRANSFER_METADATA {
     tag "$meta.species"
-    label 'local'
+    label 'normal'
     publishDir "$params.output_dir/$meta.species", mode: 'copy'
 
     input:
