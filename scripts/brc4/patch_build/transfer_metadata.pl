@@ -45,6 +45,7 @@ my %skip_analysis = map { $_ => 1 } (
   "xrefuniparc",
   "gouniprot",
   "interpro2go",
+  "interpro2pathway",
 );
 
 ###############################################################################
