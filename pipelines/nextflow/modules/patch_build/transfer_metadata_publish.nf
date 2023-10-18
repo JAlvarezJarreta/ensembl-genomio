@@ -19,26 +19,22 @@ process TRANSFER_METADATA {
     publishDir "$params.output_dir/$meta.species", mode: 'copy'
 
     input:
-        val(meta)
-        path(old_registry)
-        path(new_registry)
+        tuple val(meta), path(old_registry), path(new_registry)
     
     output:
         tuple val(meta), path("transfer_metadata.err"), emit: log
 
     script:
-    update = params.mock ? "" : "--update"
-    """
-    touch transfer_metadata.err
-
-    #perl $params.scripts_dir/transfer_metadata.pl \\
-    #    --old ./$old_registry \\
-    #    --new ./$new_registry \\
-    #    --species $meta.species \\
-    #    --descriptions \\
-    #    --versions \\
-    #    --xrefs \\
-    #    --verbose \\
-    #    $update 2> transfer_metadata.err
-    """
+        update = params.mock ? "" : "--update"
+        """
+        perl $params.scripts_dir/transfer_metadata.pl \\
+            --old ./$old_registry \\
+            --new ./$new_registry \\
+            --species $meta.species \\
+            --descriptions \\
+            --versions \\
+            --xrefs \\
+            --verbose \\
+            $update 2> transfer_metadata.err
+        """
 }

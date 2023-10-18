@@ -23,7 +23,7 @@ def helpMessage() {
         Mandatory arguments:
         --old_registry                 Ensembl API registry for all old databases to transfer metadata from.
         --new_registry                 Ensembl API registry for all new databases to transfer metadata to.
-        --species_list                 List of species (production_name) to use with both registries.
+        --species_list                 List of species (csv with one header="species") to use with both registries.
 
         Optional:
         --mock                         Do not transfer
@@ -51,14 +51,27 @@ if (!params.species_list) {
 }
 
 include { TRANSFER_METADATA } from '../../modules/patch_build/transfer_metadata_publish.nf'
+
+workflow TRANSFER {
+    take:
+        species_meta
+        old_registry
+        new_registry
+    
+    emit:
+        logs
+    
+    main:
+        species_transfer_meta = species_meta.combine(old_registry).combine(new_registry)
+        transfer_log = TRANSFER_METADATA(species_transfer_meta).log
+
+        logs = transfer_log
+}
+
 workflow {
     old_registry = Channel.fromPath(params.old_registry, checkIfExists: true)
     new_registry = Channel.fromPath(params.new_registry, checkIfExists: true)
-    species_list = Channel.fromPath(params.species_list, checkIfExists: true).splitCsv()
+    species_meta = Channel.fromPath(params.species_list, checkIfExists: true).splitCsv(header: true)
 
-    species_meta = species_list.map{ species_csv -> [species: species_csv[0]] }
-    .view()
-
-    transfer_log = TRANSFER_METADATA(species_meta, old_registry, new_registry).log
-    transfer_log.view()
+    logs = TRANSFER(species_meta, old_registry, new_registry)
 }
