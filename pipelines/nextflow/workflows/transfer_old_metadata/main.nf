@@ -62,15 +62,14 @@ workflow TRANSFER {
         logs
     
     main:
-        species_transfer_meta = species_meta.combine(old_registry).combine(new_registry)
-        transfer_log = TRANSFER_METADATA(species_transfer_meta).log
+        transfer_log = TRANSFER_METADATA(species_meta, old_registry, new_registry).log
 
         logs = transfer_log
 }
 
 workflow {
-    old_registry = Channel.fromPath(params.old_registry, checkIfExists: true)
-    new_registry = Channel.fromPath(params.new_registry, checkIfExists: true)
+    old_registry = Channel.fromPath(params.old_registry, checkIfExists: true).first()
+    new_registry = Channel.fromPath(params.new_registry, checkIfExists: true).first()
     species_meta = Channel.fromPath(params.species_list, checkIfExists: true).splitCsv(header: true)
 
     logs = TRANSFER(species_meta, old_registry, new_registry)

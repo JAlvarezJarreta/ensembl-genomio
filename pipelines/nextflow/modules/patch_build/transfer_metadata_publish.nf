@@ -15,11 +15,14 @@
 
 process TRANSFER_METADATA {
     tag "$meta.species"
-    label 'normal'
+    label 'adaptive'
     publishDir "$params.output_dir/$meta.species", mode: 'copy'
+    maxForks 10
 
     input:
-        tuple val(meta), path(old_registry), path(new_registry)
+        val(meta)
+        path(old_registry)
+        path(new_registry)
     
     output:
         tuple val(meta), path("transfer_metadata.err"), emit: log
