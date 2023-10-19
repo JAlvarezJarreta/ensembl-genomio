@@ -72,5 +72,5 @@ workflow {
     new_registry = Channel.fromPath(params.new_registry, checkIfExists: true).first()
     species_meta = Channel.fromPath(params.species_list, checkIfExists: true).splitCsv(header: true)
 
-    logs = TRANSFER(species_meta, old_registry, new_registry)
+    TRANSFER(species_meta, old_registry, new_registry)
 }
