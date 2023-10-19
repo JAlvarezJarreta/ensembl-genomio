@@ -84,11 +84,13 @@ for my $feat (@features) {
   $logger->info(scalar(keys %{$new_data{$feat}}) . " ${feat}s from new database");
 }
 
+my $log = [];
+
 # Transfer descriptions
 if ($opt{descriptions}) {
   for my $feat (@features) {
     $logger->info("Descriptions transfer for $feat:");
-    update_descriptions($registry, $species, $feat, $old_data{$feat}, $opt{update});
+    $log = update_descriptions($registry, $species, $feat, $old_data{$feat}, $opt{update}, $log);
   }
 }
 
@@ -96,7 +98,7 @@ if ($opt{descriptions}) {
 if ($opt{xrefs}) {
   for my $feat (@features) {
     $logger->info("Xrefs transfer for $feat:");
-    update_xrefs($registry, $species, $feat, $old_data{$feat}, $opt{update});
+    $log = update_xrefs($registry, $species, $feat, $old_data{$feat}, $opt{update}, $log);
   }
 }
 
@@ -106,6 +108,21 @@ if ($opt{versions}) {
     $logger->info("Versions transfer for $feat:");
     update_versions($registry, $species, $feat, $old_data{$feat}, $opt{update});
   }
+}
+
+if ($opt{transfer_log}) {
+  my @header = qw(species biotype stable_id type key value);
+  # Print out the transfers
+  open my $LOG, ">", $opt{transfer_log};
+  print $LOG join("\t", @header) . "\n";
+  for my $log_item (@$log) {
+    use Data::Dumper;
+    warn(Dumper $log_item);
+    $log_item->{species} = $species;
+    my @elements = map { $log_item->{$_} // "" } @header;
+    print $LOG join("\t", @elements) . "\n";
+  }
+  close $LOG;
 }
 
 ###############################################################################
@@ -174,8 +191,8 @@ sub update_versions {
 
 #Update descriptions, excluding the feature type 'translation'
 sub update_descriptions {
-  my ($registry, $species, $feature, $old_feats, $update) = @_;
-  return if $feature eq "translation";
+  my ($registry, $species, $feature, $old_feats, $update, $log) = @_;
+  return $log if $feature eq "translation";
   
   my $update_count = 0;
   my $empty_count = 0;
@@ -197,10 +214,11 @@ sub update_descriptions {
       if (defined $old_description and $old_description !~ /\[Source:/) {
         my $new_description = $old_description;
         my $addentum = "";
-        if ($description =~ /\[Source:/) {
+        if ($description and $description =~ /\[Source:/) {
           $addentum = "(replacing an xref description: [$description])";
         }
         $logger->debug("Transfer $feature $id description: $new_description $addentum");
+        push @$log, {biotype => $feature, stable_id => $id, type => "description", key => $description, value => "$new_description"};
         $update_count++;
 
         if ($update) {
@@ -217,12 +235,14 @@ sub update_descriptions {
   $logger->info("$empty_count $feature without description remain");
   $logger->info("$new_count new $feature, without description");
   $logger->info("(Use --update to update the descriptions in the database)") if $update_count > 0 and not $update;
+
+  return $log;
 }
 
 #Xrefs are updated by mapping the gene stable_id
 sub update_xrefs {
   # Transfer the xrefs from old entries to new entries, if those do not exist
-  my ($registry, $species, $feature, $old_feats, $update) = @_;
+  my ($registry, $species, $feature, $old_feats, $update, $log) = @_;
   
   my $update_count = 0;
   my $new_count = 0;
@@ -262,6 +282,7 @@ sub update_xrefs {
       $xref->dbname($dbname);
       if (not exists $xref_dict{$dbname}) {
         $logger->debug("Transfer $feature $id xref: $analysis_name with ID " . $xref->primary_id);
+        push @$log, {biotype => $feature, stable_id => $id, type => "xref", key => $analysis_name, value => $xref->primary_id};
         $yes_transfer{$analysis_name}++;
         $update_count++;
         if ($update) {
@@ -288,11 +309,11 @@ sub update_xrefs {
   $logger->info("$new_count new $feature, without xref to transfer");
   for my $dbname (sort keys %yes_transfer) {
     my $count = $yes_transfer{$dbname};
-    $logger->info("Transfered: $count\t$dbname");
+    $logger->info("Transferred: $count\t$dbname");
   }
   for my $dbname (sort keys %no_transfer) {
     my $count = $no_transfer{$dbname};
-    $logger->info("NOT transfered: $count from external_db '$dbname'");
+    $logger->info("NOT transferred: $count from external_db '$dbname'");
   }
   $logger->info("$total_transfer written xref transfers") if $total_transfer > 0;
   if ($update_count > 0) {
@@ -302,6 +323,7 @@ sub update_xrefs {
   } else {
     $logger->info("(No xrefs to update in the database)");
   }
+  return $log;
 }
 
 #Retrieve other metadata 
@@ -366,6 +388,7 @@ sub usage {
     --descriptions : Transfer the gene descriptions
     --versions     : Transfer and increment the gene versions, and init the others
     --xrefs        : Transfer the xrefs associated with genes
+    --transfer_log <path> : Keep a log of all the transfers
     
     Use this to make actual changes:
     --update          : Do the actual changes (default is no changes to the database)
@@ -388,6 +411,7 @@ sub opt_check {
     "versions",
     "xrefs",
     "update",
+    "transfer_log=s",
     "help",
     "verbose",
     "debug",
