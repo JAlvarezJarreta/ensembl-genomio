@@ -186,7 +186,7 @@ sub update_descriptions {
     my $id = $feat->stable_id;
     my $description = $feat->description;
 
-    if (not defined $description) {
+    if (not defined $description or $description =~ /\[Source:/) {
       my $old_feat = $old_feats->{$id};
       if (not $old_feat) {
         $new_count++;
@@ -194,9 +194,13 @@ sub update_descriptions {
       }
       my $old_description = $old_feat->{description};
 
-      if (defined $old_description) {
+      if (defined $old_description and $old_description !~ /\[Source:/) {
         my $new_description = $old_description;
-        $logger->debug("Transfer $feature $id description: $new_description");
+        my $addentum = "";
+        if ($description =~ /\[Source:/) {
+          $addentum = "(replacing an xref description: [$description])";
+        }
+        $logger->debug("Transfer $feature $id description: $new_description $addentum");
         $update_count++;
 
         if ($update) {
