@@ -25,7 +25,8 @@ process TRANSFER_METADATA {
         path(new_registry)
     
     output:
-        tuple val(meta), path("transfer_metadata.err"), emit: log
+        tuple val(meta), path("transfer_metadata.err"), emit: error
+        tuple val(meta), path("transfer_metadata.log"), emit: log
 
     script:
         update = params.mock ? "" : "--update"
@@ -37,6 +38,7 @@ process TRANSFER_METADATA {
             --descriptions \\
             --versions \\
             --xrefs \\
+            --transfer_log transfer_metadata.log \\
             --verbose \\
             $update 2> transfer_metadata.err
         """
