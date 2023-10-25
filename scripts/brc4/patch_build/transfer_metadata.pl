@@ -43,9 +43,15 @@ my %skip_analysis = map { $_ => 1 } (
   "xref_sprot_blastp",
   "xref_trembl_blastp",
   "xrefuniparc",
+  "xreflegacy",
   "gouniprot",
   "interpro2go",
   "interpro2pathway",
+  "xrefexonerateprotein",
+  "xrefexoneratedna",
+);
+my %skip_external_db = map { $_ => 1 } (
+  "VB_External_Description",
 );
 
 ###############################################################################
@@ -273,7 +279,7 @@ sub update_xrefs {
       $dbname = $alias_xrefs{$dbname} // $dbname;
       my $analysis = $xref->analysis;
       my $analysis_name = $analysis ? "$dbname (".$analysis->logic_name.")" : $dbname;
-      if ($analysis and exists $skip_analysis{$analysis->logic_name}) {
+      if (($dbname and exists $skip_external_db{$dbname}) or ($analysis and exists $skip_analysis{$analysis->logic_name})) {
         $logger->debug("NO TRANSFER for $feature $id xref:\t$analysis_name\twith ID " . $xref->display_id);
         $no_transfer{$analysis_name}++;
         next;
