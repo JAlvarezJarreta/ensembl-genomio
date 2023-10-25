@@ -116,6 +116,8 @@ if ($opt{transfer_log}) {
   open my $LOG, ">", $opt{transfer_log};
   print $LOG join("\t", @header) . "\n";
   for my $log_item (@$log) {
+    use Data::Dumper;
+    warn(Dumper $log_item);
     $log_item->{species} = $species;
     my @elements = map { $log_item->{$_} // "" } @header;
     print $LOG join("\t", @elements) . "\n";
@@ -201,7 +203,7 @@ sub update_descriptions {
     my $id = $feat->stable_id;
     my $description = $feat->description;
 
-    if (not defined $description or $description =~ /\[Source:/) {
+    if (not defined $description or $description =~ /\[Source:/ or $description =~ /^\s*$/) {
       my $old_feat = $old_feats->{$id};
       if (not $old_feat) {
         $new_count++;
@@ -209,7 +211,7 @@ sub update_descriptions {
       }
       my $old_description = $old_feat->{description};
 
-      if (defined $old_description and $old_description !~ /\[Source:/) {
+      if (defined $old_description and $old_description !~ /\[Source:/ and $old_description !~ /^\s*$/) {
         my $new_description = $old_description;
         my $addentum = "";
         if ($description and $description =~ /\[Source:/) {
