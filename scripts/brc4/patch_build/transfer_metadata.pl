@@ -274,15 +274,15 @@ sub update_xrefs {
       my $analysis = $xref->analysis;
       my $analysis_name = $analysis ? "$dbname (".$analysis->logic_name.")" : $dbname;
       if ($analysis and exists $skip_analysis{$analysis->logic_name}) {
-        $logger->debug("NO TRANSFER for $feature $id xref:\t$analysis_name\twith ID " . $xref->primary_id);
+        $logger->debug("NO TRANSFER for $feature $id xref:\t$analysis_name\twith ID " . $xref->display_id);
         $no_transfer{$analysis_name}++;
         next;
       }
 
       $xref->dbname($dbname);
       if (not exists $xref_dict{$dbname}) {
-        $logger->debug("Transfer $feature $id xref: $analysis_name with ID " . $xref->primary_id);
-        push @$log, {biotype => $feature, stable_id => $id, type => "xref", key => $analysis_name, value => $xref->primary_id};
+        $logger->debug("Transfer $feature $id xref: $analysis_name with ID " . $xref->display_id);
+        push @$log, {biotype => $feature, stable_id => $id, type => "xref", key => $analysis_name, value => $xref->display_id};
         $yes_transfer{$analysis_name}++;
         $update_count++;
         if ($update) {
