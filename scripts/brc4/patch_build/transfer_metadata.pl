@@ -116,8 +116,6 @@ if ($opt{transfer_log}) {
   open my $LOG, ">", $opt{transfer_log};
   print $LOG join("\t", @header) . "\n";
   for my $log_item (@$log) {
-    use Data::Dumper;
-    warn(Dumper $log_item);
     $log_item->{species} = $species;
     my @elements = map { $log_item->{$_} // "" } @header;
     print $LOG join("\t", @elements) . "\n";
