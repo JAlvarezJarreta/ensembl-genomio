@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.io.genomio.genome_metadata.prepare &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.io.genomio.genome_metadata.prepare</h1><div class="highlight"><pre>
+<span></span><span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;Expand the genome_metadata with more details for:</span>
+<span class="sd">the provider, assembly and gene build version, and the taxonomy.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;add_provider&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;add_assembly_version&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;add_genebuild_metadata&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;add_species_metadata&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_taxonomy_from_accession&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;prepare_genome_metadata&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;PROVIDER_DATA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;DEFAULT_API_URL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MissingNodeError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MetadataError&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">PathLike</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">xml.etree</span> <span class="kn">import</span> <span class="n">ElementTree</span>
+<span class="kn">from</span> <span class="nn">xml.etree.ElementTree</span> <span class="kn">import</span> <span class="n">Element</span>
+
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.io.genomio.utils</span> <span class="kn">import</span> <span class="n">get_json</span><span class="p">,</span> <span class="n">print_json</span>
+<span class="kn">from</span> <span class="nn">ensembl.utils.argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
+
+
+<span class="n">PROVIDER_DATA</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;GenBank&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;assembly&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;provider_name&quot;</span><span class="p">:</span> <span class="s2">&quot;GenBank&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;provider_url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://www.ncbi.nlm.nih.gov/assembly&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;annotation&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;provider_name&quot;</span><span class="p">:</span> <span class="s2">&quot;GenBank&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;provider_url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://www.ncbi.nlm.nih.gov/assembly&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;RefSeq&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;assembly&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;provider_name&quot;</span><span class="p">:</span> <span class="s2">&quot;RefSeq&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;provider_url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://www.ncbi.nlm.nih.gov/refseq&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;annotation&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;provider_name&quot;</span><span class="p">:</span> <span class="s2">&quot;RefSeq&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;provider_url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://www.ncbi.nlm.nih.gov/refseq&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+<span class="n">DEFAULT_API_URL</span> <span class="o">=</span> <span class="s2">&quot;https://www.ebi.ac.uk/ena/browser/api/xml/&quot;</span>
+
+
+<div class="viewcode-block" id="MissingNodeError"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.MissingNodeError">[docs]</a><span class="k">class</span> <span class="nc">MissingNodeError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;When a taxon XML node cannot be found.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="MetadataError"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.MetadataError">[docs]</a><span class="k">class</span> <span class="nc">MetadataError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;When a metadata value is not expected.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="add_provider"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.add_provider">[docs]</a><span class="k">def</span> <span class="nf">add_provider</span><span class="p">(</span><span class="n">genome_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">gff3_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adds provider metadata for assembly and gene models in `genome_data`.</span>
+
+<span class="sd">    Assembly provider metadata will only be added if it is missing, i.e. neither ``provider_name`` or</span>
+<span class="sd">    ``provider_url`` are present. The gene model metadata will only be added if `gff3_file` is provided.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        genome_data: Genome information of assembly, accession and annotation.</span>
+<span class="sd">        gff3_file: Path to GFF3 file to use as annotation source for this genome.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get accession provider</span>
+    <span class="n">accession</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;accession&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">accession</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;GCF&quot;</span><span class="p">):</span>
+        <span class="n">provider</span> <span class="o">=</span> <span class="n">PROVIDER_DATA</span><span class="p">[</span><span class="s2">&quot;RefSeq&quot;</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">accession</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;GCA&quot;</span><span class="p">):</span>
+        <span class="n">provider</span> <span class="o">=</span> <span class="n">PROVIDER_DATA</span><span class="p">[</span><span class="s2">&quot;GenBank&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MetadataError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Accession doesn&#39;t look like an INSDC or RefSeq accession: </span><span class="si">{</span><span class="n">accession</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Add assembly provider (if missing)</span>
+    <span class="n">assembly</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="s2">&quot;provider_name&quot;</span> <span class="ow">in</span> <span class="n">assembly</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="s2">&quot;provider_url&quot;</span> <span class="ow">in</span> <span class="n">assembly</span><span class="p">):</span>
+        <span class="n">assembly</span><span class="p">[</span><span class="s2">&quot;provider_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">provider</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;provider_name&quot;</span><span class="p">]</span>
+        <span class="n">assembly</span><span class="p">[</span><span class="s2">&quot;provider_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">provider</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;provider_url&quot;</span><span class="p">]</span>
+
+    <span class="c1"># Add annotation provider if there are gene models</span>
+    <span class="k">if</span> <span class="n">gff3_file</span><span class="p">:</span>
+        <span class="n">annotation</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s2">&quot;annotation&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">:</span>
+            <span class="n">annotation</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;annotation&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;provider_name&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">annotation</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="s2">&quot;provider_url&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">annotation</span><span class="p">):</span>
+            <span class="n">annotation</span><span class="p">[</span><span class="s2">&quot;provider_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">provider</span><span class="p">[</span><span class="s2">&quot;annotation&quot;</span><span class="p">][</span><span class="s2">&quot;provider_name&quot;</span><span class="p">]</span>
+            <span class="n">annotation</span><span class="p">[</span><span class="s2">&quot;provider_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">provider</span><span class="p">[</span><span class="s2">&quot;annotation&quot;</span><span class="p">][</span><span class="s2">&quot;provider_url&quot;</span><span class="p">]</span>
+        <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;annotation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">annotation</span></div>
+
+
+<div class="viewcode-block" id="add_assembly_version"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.add_assembly_version">[docs]</a><span class="k">def</span> <span class="nf">add_assembly_version</span><span class="p">(</span><span class="n">genome_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adds version number to the genome&#39;s assembly if one is not present already.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        genome_data: Genome information of assembly, accession and annotation.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">assembly</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;version&quot;</span> <span class="ow">in</span> <span class="n">assembly</span><span class="p">:</span>
+        <span class="n">accession</span> <span class="o">=</span> <span class="n">assembly</span><span class="p">[</span><span class="s2">&quot;accession&quot;</span><span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">accession</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="ow">and</span> <span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">assembly</span><span class="p">[</span><span class="s2">&quot;version&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="add_genebuild_metadata"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.add_genebuild_metadata">[docs]</a><span class="k">def</span> <span class="nf">add_genebuild_metadata</span><span class="p">(</span><span class="n">genome_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adds missing genebuild metadata.</span>
+
+<span class="sd">    The default convention is to use the current date as ``version`` and ``start_date``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        genome_data: Genome information of assembly, accession and annotation.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">genebuild</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;genebuild&quot;</span><span class="p">]</span>
+    <span class="n">current_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;version&quot;</span> <span class="ow">in</span> <span class="n">genebuild</span><span class="p">:</span>
+        <span class="n">genebuild</span><span class="p">[</span><span class="s2">&quot;version&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_date</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;start_date&quot;</span> <span class="ow">in</span> <span class="n">genebuild</span><span class="p">:</span>
+        <span class="n">genebuild</span><span class="p">[</span><span class="s2">&quot;start_date&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_date</span></div>
+
+
+<div class="viewcode-block" id="add_species_metadata"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.add_species_metadata">[docs]</a><span class="k">def</span> <span class="nf">add_species_metadata</span><span class="p">(</span><span class="n">genome_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">base_api_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_API_URL</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adds missing species metadata based on the genome&#39;s accession.</span>
+
+<span class="sd">    The ``taxonomy_id``, ``strain`` and ``scientific_name`` will be fetched from the taxonomy information</span>
+<span class="sd">    linked to the given accession.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        genome_data: Genome information of assembly, accession and annotation.</span>
+<span class="sd">        base_api_url: Base API URL to fetch the taxonomy data from.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">species</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;taxonomy_id&quot;</span> <span class="ow">in</span> <span class="n">species</span><span class="p">:</span>
+        <span class="n">accession</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;accession&quot;</span><span class="p">]</span>
+        <span class="n">taxonomy</span> <span class="o">=</span> <span class="n">get_taxonomy_from_accession</span><span class="p">(</span><span class="n">accession</span><span class="p">,</span> <span class="n">base_api_url</span><span class="p">)</span>
+        <span class="n">species</span><span class="p">[</span><span class="s2">&quot;taxonomy_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">taxonomy</span><span class="p">[</span><span class="s2">&quot;taxon_id&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="s2">&quot;strain&quot;</span> <span class="ow">in</span> <span class="n">species</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="s2">&quot;strain&quot;</span> <span class="ow">in</span> <span class="n">taxonomy</span><span class="p">):</span>
+            <span class="n">species</span><span class="p">[</span><span class="s2">&quot;strain&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">taxonomy</span><span class="p">[</span><span class="s2">&quot;strain&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;scientific_name&quot;</span> <span class="ow">in</span> <span class="n">species</span><span class="p">:</span>
+            <span class="n">species</span><span class="p">[</span><span class="s2">&quot;scientific_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">taxonomy</span><span class="p">[</span><span class="s2">&quot;scientific_name&quot;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="get_taxonomy_from_accession"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.get_taxonomy_from_accession">[docs]</a><span class="k">def</span> <span class="nf">get_taxonomy_from_accession</span><span class="p">(</span><span class="n">accession</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">base_api_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_API_URL</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the taxonomy metadata associated to the given accession.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        accession: INSDC accession ID.</span>
+<span class="sd">        base_api_url: Base API URL to fetch the taxonomy data from.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary with key-value pairs for ``taxon_id`` and ``scientific_name``. ``strain`` will be added</span>
+<span class="sd">        only if present in the fetched taxonomy data.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        MissinDataException: If ``TAXON_ID`` or ``SCIENTIFIC_NAME`` are missing in the taxonomy data fetched.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Use the GenBank accession without version</span>
+    <span class="n">gb_accession</span> <span class="o">=</span> <span class="n">accession</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;GCF&quot;</span><span class="p">,</span> <span class="s2">&quot;GCA&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_api_url</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">gb_accession</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+    <span class="n">entry</span> <span class="o">=</span> <span class="n">ElementTree</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="n">taxon_node</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;.//TAXON&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">taxon_node</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingNodeError</span><span class="p">(</span><span class="s2">&quot;Can&#39;t find the TAXON node&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Fetch taxon ID, scientific_name and strain</span>
+    <span class="n">taxon_id</span> <span class="o">=</span> <span class="n">_get_node_text</span><span class="p">(</span><span class="n">taxon_node</span><span class="p">,</span> <span class="s2">&quot;TAXON_ID&quot;</span><span class="p">)</span>
+    <span class="n">scientific_name</span> <span class="o">=</span> <span class="n">_get_node_text</span><span class="p">(</span><span class="n">taxon_node</span><span class="p">,</span> <span class="s2">&quot;SCIENTIFIC_NAME&quot;</span><span class="p">)</span>
+    <span class="n">strain</span> <span class="o">=</span> <span class="n">_get_node_text</span><span class="p">(</span><span class="n">taxon_node</span><span class="p">,</span> <span class="s2">&quot;STRAIN&quot;</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">taxon_id</span> <span class="ow">and</span> <span class="n">scientific_name</span><span class="p">:</span>
+        <span class="n">taxonomy</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;taxon_id&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">taxon_id</span><span class="p">),</span>
+            <span class="s2">&quot;scientific_name&quot;</span><span class="p">:</span> <span class="n">scientific_name</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="k">if</span> <span class="n">strain</span><span class="p">:</span>
+        <span class="n">taxonomy</span><span class="p">[</span><span class="s2">&quot;strain&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">strain</span>
+    <span class="k">return</span> <span class="n">taxonomy</span></div>
+
+
+<span class="k">def</span> <span class="nf">_get_node_text</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">Element</span><span class="p">,</span> <span class="n">tag</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">optional</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the value of the field matching the provided tag inside `node`.</span>
+<span class="sd">    By default raise a MissingNodeException if the tag is not found.</span>
+<span class="sd">    If optional is True and no tag is found, return None.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        node: Node of an XML tree.</span>
+<span class="sd">        tag: Tag to fetch within the node.</span>
+<span class="sd">        optional: Don&#39;t raise an exception if the tag doesn&#39;t exist.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingNodeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No node provided to look for </span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">tag_node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tag_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">tag_node</span><span class="o">.</span><span class="n">text</span>
+    <span class="k">if</span> <span class="n">optional</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">raise</span> <span class="n">MissingNodeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No node found for tag </span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="prepare_genome_metadata"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.prepare_genome_metadata">[docs]</a><span class="k">def</span> <span class="nf">prepare_genome_metadata</span><span class="p">(</span>
+    <span class="n">input_file</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">,</span>
+    <span class="n">output_file</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">,</span>
+    <span class="n">gff3_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">base_api_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_API_URL</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Updates the genome metadata JSON file with additional information.</span>
+
+<span class="sd">    In particular, more information is added about the provider, the assembly and its gene build version,</span>
+<span class="sd">    and the taxonomy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_file: Path to JSON file with genome metadata.</span>
+<span class="sd">        output_file: Output directory where to generate the final `genome.json` file.</span>
+<span class="sd">        gff3_file: Path to GFF3 file to use as annotation source for this genome.</span>
+<span class="sd">        base_api_url: Base API URL to fetch the taxonomy data from.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">genome_data</span> <span class="o">=</span> <span class="n">get_json</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span>
+    <span class="c1"># Amend any missing metadata</span>
+    <span class="n">add_provider</span><span class="p">(</span><span class="n">genome_data</span><span class="p">,</span> <span class="n">gff3_file</span><span class="p">)</span>
+    <span class="n">add_assembly_version</span><span class="p">(</span><span class="n">genome_data</span><span class="p">)</span>
+    <span class="n">add_genebuild_metadata</span><span class="p">(</span><span class="n">genome_data</span><span class="p">)</span>
+    <span class="n">add_species_metadata</span><span class="p">(</span><span class="n">genome_data</span><span class="p">,</span> <span class="n">base_api_url</span><span class="p">)</span>
+    <span class="c1"># Dump updated genome metadata</span>
+    <span class="n">print_json</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="n">genome_data</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Module&#39;s entry-point.&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Add information about provider, taxonomy and assembly and gene build version to the genome &quot;</span>
+            <span class="s2">&quot;metadata file.&quot;</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_src_path</span><span class="p">(</span><span class="s2">&quot;--input_file&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Genome metadata JSON file&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_dst_path</span><span class="p">(</span>
+        <span class="s2">&quot;--output_file&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Output path for the new genome metadata file&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_src_path</span><span class="p">(</span><span class="s2">&quot;--gff3_file&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;GFF3 file to use as annotation source&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--base_api_url&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_API_URL</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;API URL to fetch the taxonomy data from&quot;</span>
+    <span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">prepare_genome_metadata</span><span class="p">(</span><span class="o">**</span><span class="nb">vars</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

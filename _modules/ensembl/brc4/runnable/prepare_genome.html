@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.brc4.runnable.prepare_genome &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.brc4.runnable.prepare_genome</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!env python3</span>
+<span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">eHive</span>
+<span class="kn">import</span> <span class="nn">mysql.connector</span>
+
+
+<div class="viewcode-block" id="prepare_genome"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome">[docs]</a><span class="k">class</span> <span class="nc">prepare_genome</span><span class="p">(</span><span class="n">eHive</span><span class="o">.</span><span class="n">BaseRunnable</span><span class="p">):</span>
+<div class="viewcode-block" id="prepare_genome.param_defaults"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome.param_defaults">[docs]</a>    <span class="k">def</span> <span class="nf">param_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;ensembl_mode&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;db_prefix&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="prepare_genome.run"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">manifest_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;manifest&quot;</span><span class="p">)</span>
+
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">manifest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_manifest</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">)</span>
+        <span class="n">genome</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_genome</span><span class="p">(</span><span class="n">manifest</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_accession</span><span class="p">(</span><span class="n">genome</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_assembly_name</span><span class="p">(</span><span class="n">genome</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">manifest</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">genome</span><span class="p">)</span>
+
+        <span class="n">db_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_db_name</span><span class="p">(</span><span class="n">genome</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;db_name = </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">db_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;db_name&quot;</span><span class="p">,</span> <span class="n">db_name</span><span class="p">)</span>
+
+        <span class="c1"># FLOW</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataflow</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;db_name&quot;</span><span class="p">:</span> <span class="n">db_name</span><span class="p">,</span>
+                <span class="s2">&quot;manifest_data&quot;</span><span class="p">:</span> <span class="n">manifest</span><span class="p">,</span>
+                <span class="s2">&quot;genome_data&quot;</span><span class="p">:</span> <span class="n">genome</span><span class="p">,</span>
+                <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="n">genome</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">][</span><span class="s2">&quot;production_name&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;has_gff3&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="s2">&quot;gff3&quot;</span> <span class="ow">in</span> <span class="n">manifest</span> <span class="ow">and</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">&quot;gff3&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="p">},</span>
+            <span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># DB metadata for registry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataflow</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;db_data&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;db_name&quot;</span><span class="p">:</span> <span class="n">db_name</span><span class="p">,</span>
+                    <span class="s2">&quot;genome_data&quot;</span><span class="p">:</span> <span class="n">genome</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="mi">3</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="prepare_genome.get_manifest"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome.get_manifest">[docs]</a>    <span class="k">def</span> <span class="nf">get_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest_path</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">manifest_file</span><span class="p">:</span>
+            <span class="n">manifest</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">manifest_file</span><span class="p">)</span>
+
+            <span class="c1"># Use dir name from the manifest</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;file&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+                    <span class="n">file_name</span> <span class="o">=</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">&quot;file&quot;</span><span class="p">]</span>
+                    <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">),</span> <span class="n">file_name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+                        <span class="k">if</span> <span class="s2">&quot;file&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">f</span><span class="p">]:</span>
+                            <span class="n">file_name</span> <span class="o">=</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">f</span><span class="p">][</span><span class="s2">&quot;file&quot;</span><span class="p">]</span>
+                            <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">),</span> <span class="n">file_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">manifest</span></div>
+
+<div class="viewcode-block" id="prepare_genome.get_genome"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome.get_genome">[docs]</a>    <span class="k">def</span> <span class="nf">get_genome</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest</span><span class="p">):</span>
+        <span class="c1"># Get genome metadata</span>
+        <span class="k">if</span> <span class="s2">&quot;genome&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+            <span class="n">genome_path</span> <span class="o">=</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">&quot;genome&quot;</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">genome_path</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">genome_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">genome_file</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">genome_file</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="prepare_genome.make_db_name"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome.make_db_name">[docs]</a>    <span class="k">def</span> <span class="nf">make_db_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">genome</span><span class="p">):</span>
+        <span class="n">prod_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_production_name</span><span class="p">(</span><span class="n">genome</span><span class="p">)</span>
+        <span class="n">prod_name</span> <span class="o">=</span> <span class="n">prod_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">ensembl_version</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;ensembl_version&quot;</span><span class="p">))</span>
+        <span class="n">release</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;release&quot;</span><span class="p">))</span>
+        <span class="n">assembly_version</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_assembly_version</span><span class="p">(</span><span class="n">genome</span><span class="p">))</span>
+        <span class="n">db_prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;db_prefix&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check the db name is shorter than the limit: reduce it to &quot;Genus sp&quot;</span>
+        <span class="n">db_prod_name</span> <span class="o">=</span> <span class="n">prod_name</span>
+        <span class="n">max_prod_length</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mi">64</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">release</span><span class="p">))</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ensembl_version</span><span class="p">))</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">assembly_version</span><span class="p">))</span> <span class="o">-</span> <span class="mi">4</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">db_prefix</span><span class="p">:</span>
+            <span class="n">max_prod_length</span> <span class="o">=</span> <span class="n">max_prod_length</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">db_prefix</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">db_prod_name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_prod_length</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;DB name is too long! Trying to shorten it...&quot;</span><span class="p">)</span>
+            <span class="p">(</span><span class="n">genus_str</span><span class="p">,</span> <span class="n">species_str</span><span class="p">,</span> <span class="n">gca_str</span><span class="p">)</span> <span class="o">=</span> <span class="n">db_prod_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span>
+            <span class="n">db_prod_name</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">genus_str</span><span class="p">,</span> <span class="s2">&quot;sp&quot;</span><span class="p">,</span> <span class="n">gca_str</span><span class="p">])</span>
+
+            <span class="c1"># Still too long? Die</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">db_prod_name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_prod_length</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;Can&#39;t use the db name for </span><span class="si">%s</span><span class="s2"> (len = </span><span class="si">%d</span><span class="s2">, max = </span><span class="si">%d</span><span class="s2">)&quot;</span>
+                    <span class="o">%</span> <span class="p">(</span><span class="n">db_prod_name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">db_prod_name</span><span class="p">),</span> <span class="n">max_prod_length</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">prod_name</span> <span class="o">=</span> <span class="n">db_prod_name</span>
+
+        <span class="c1"># Store this production name</span>
+        <span class="n">genome</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">][</span><span class="s2">&quot;production_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prod_name</span>
+
+        <span class="n">name_parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">prod_name</span><span class="p">,</span> <span class="s2">&quot;core&quot;</span><span class="p">,</span> <span class="n">release</span><span class="p">,</span> <span class="n">ensembl_version</span><span class="p">,</span> <span class="n">assembly_version</span><span class="p">]</span>
+
+        <span class="n">db_name</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name_parts</span><span class="p">)</span>
+        <span class="n">db_name</span> <span class="o">=</span> <span class="n">db_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_db_name_format</span><span class="p">(</span><span class="n">db_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">db_prefix</span><span class="p">:</span>
+            <span class="n">db_name</span> <span class="o">=</span> <span class="n">db_prefix</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">db_name</span>
+
+        <span class="k">return</span> <span class="n">db_name</span></div>
+
+<div class="viewcode-block" id="prepare_genome.make_production_name"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome.make_production_name">[docs]</a>    <span class="k">def</span> <span class="nf">make_production_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">genome</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s2">&quot;species&quot;</span> <span class="ow">in</span> <span class="n">genome</span><span class="p">:</span>
+            <span class="n">genome_sp</span> <span class="o">=</span> <span class="n">genome</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;production_name&quot;</span> <span class="ow">in</span> <span class="n">genome_sp</span><span class="p">:</span>
+                <span class="n">prod_name</span> <span class="o">=</span> <span class="n">genome_sp</span><span class="p">[</span><span class="s2">&quot;production_name&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Create prod name from taxonomy</span>
+                <span class="k">if</span> <span class="s2">&quot;taxonomy_id&quot;</span> <span class="ow">in</span> <span class="n">genome_sp</span><span class="p">:</span>
+                    <span class="n">taxon_id</span> <span class="o">=</span> <span class="n">genome_sp</span><span class="p">[</span><span class="s2">&quot;taxonomy_id&quot;</span><span class="p">]</span>
+                    <span class="n">scientific_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_scientific_name</span><span class="p">(</span><span class="n">taxon_id</span><span class="p">)</span>
+
+                    <span class="c1"># If what we get is not a species name (only 1 word), use the input name</span>
+                    <span class="k">if</span> <span class="s2">&quot; &quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">scientific_name</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Use input scientific name&quot;</span><span class="p">)</span>
+                        <span class="n">scientific_name</span> <span class="o">=</span> <span class="n">genome_sp</span><span class="p">[</span><span class="s2">&quot;scientific_name&quot;</span><span class="p">]</span>
+
+                    <span class="c1"># Name in bracket means that it may be renamed by the community</span>
+                    <span class="c1"># But we don&#39;t want those...</span>
+                    <span class="k">if</span> <span class="s2">&quot;[&quot;</span> <span class="ow">in</span> <span class="n">scientific_name</span><span class="p">:</span>
+                        <span class="n">scientific_name</span> <span class="o">=</span> <span class="n">scientific_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="s2">&quot;-&quot;</span> <span class="ow">in</span> <span class="n">scientific_name</span><span class="p">:</span>
+                        <span class="n">scientific_name</span> <span class="o">=</span> <span class="n">scientific_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+                    <span class="c1"># Only keep the first 2 words</span>
+                    <span class="n">split_name</span> <span class="o">=</span> <span class="n">scientific_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+                    <span class="n">genus</span> <span class="o">=</span> <span class="n">split_name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                    <span class="n">species</span> <span class="o">=</span> <span class="n">split_name</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+                    <span class="c1"># Special case</span>
+                    <span class="k">if</span> <span class="n">species</span> <span class="o">==</span> <span class="s2">&quot;sp.&quot;</span><span class="p">:</span>
+                        <span class="n">species</span> <span class="o">=</span> <span class="s2">&quot;sp&quot;</span>
+
+                    <span class="c1"># Check for special characters</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^[a-zA-Z0-9]+$&quot;</span><span class="p">,</span> <span class="n">genus</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The genus has special characters: &quot;</span> <span class="o">+</span> <span class="n">genus</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^[a-zA-Z0-9]$&quot;</span><span class="p">,</span> <span class="n">species</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The species has special characters: &quot;</span> <span class="o">+</span> <span class="n">species</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">genus</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">species</span><span class="p">)</span>
+
+                    <span class="c1"># Production name, with INSDC accession for uniqueness</span>
+                    <span class="n">accession</span> <span class="o">=</span> <span class="n">genome</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;accession&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">accession</span> <span class="ow">or</span> <span class="n">accession</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The INSDC accession is needed&quot;</span><span class="p">)</span>
+                    <span class="n">accession</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;\.\d+$&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">accession</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="n">accession</span> <span class="o">=</span> <span class="n">accession</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                    <span class="n">prod_name</span> <span class="o">=</span> <span class="n">genus</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">species</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">accession</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Can&#39;t find taxonomy id for genome: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">genome</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">prod_name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Can&#39;t make production name for genome: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">genome</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="prepare_genome.get_scientific_name"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome.get_scientific_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_scientific_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taxon_id</span><span class="p">):</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;taxonomy_host&quot;</span><span class="p">)</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;taxonomy_user&quot;</span><span class="p">)</span>
+        <span class="n">port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;taxonomy_port&quot;</span><span class="p">)</span>
+        <span class="n">dbname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;taxonomy_dbname&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Get connector to taxon db</span>
+        <span class="n">mydb</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connector</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="n">dbname</span><span class="p">)</span>
+        <span class="n">cur</span> <span class="o">=</span> <span class="n">mydb</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+        <span class="c1"># Get scientific name</span>
+        <span class="n">select_st</span> <span class="o">=</span> <span class="s2">&quot;SELECT name FROM ncbi_taxa_name WHERE name_class=</span><span class="si">%s</span><span class="s2"> and taxon_id=</span><span class="si">%s</span><span class="s2">&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;scientific name&quot;</span><span class="p">,</span> <span class="n">taxon_id</span><span class="p">)</span>
+        <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">select_st</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">row</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">s</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span></div>
+
+<div class="viewcode-block" id="prepare_genome.get_assembly_version"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome.get_assembly_version">[docs]</a>    <span class="k">def</span> <span class="nf">get_assembly_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">genome</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s2">&quot;assembly&quot;</span> <span class="ow">in</span> <span class="n">genome</span><span class="p">:</span>
+            <span class="n">assembly</span> <span class="o">=</span> <span class="n">genome</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;version&quot;</span> <span class="ow">in</span> <span class="n">assembly</span><span class="p">:</span>
+                <span class="n">aversion</span> <span class="o">=</span> <span class="n">assembly</span><span class="p">[</span><span class="s2">&quot;version&quot;</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">aversion</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Assembly version cannot be 0&quot;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">aversion</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">aversion</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">aversion</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">aversion</span><span class="p">)</span>
+                        <span class="n">genome</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;version&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">aversion</span>
+                        <span class="k">return</span> <span class="n">aversion</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Assembly version is not an integer: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">aversion</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">assembly</span><span class="p">:</span>
+                <span class="c1"># Get last number at the end of the assembly name</span>
+                <span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s2">&quot;\w+?(\d+?)$&quot;</span><span class="p">,</span> <span class="n">assembly</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">matches</span><span class="p">:</span>
+                    <span class="n">aversion</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">genome</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;version&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">aversion</span>
+                    <span class="k">return</span> <span class="n">aversion</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No assembly version found in </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">genome</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Can&#39;t get assembly version from name in from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">genome</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Can&#39;t get assembly data in genome </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">genome</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="prepare_genome.check_db_name_format"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome.check_db_name_format">[docs]</a>    <span class="k">def</span> <span class="nf">check_db_name_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_name</span><span class="p">):</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s2">&quot;[a-z]+_[a-z]+(_[A-z0-9]+){0,2}_core_\d+_\d+_\d+$&quot;</span><span class="p">,</span> <span class="n">db_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;Generated DB name is not the right format: </span><span class="si">%s</span><span class="s2"> (in </span><span class="si">%s</span><span class="s2">)&quot;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="n">db_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;manifest&quot;</span><span class="p">))</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="prepare_genome.update_assembly_name"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome.update_assembly_name">[docs]</a>    <span class="k">def</span> <span class="nf">update_assembly_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">and</span> <span class="s2">&quot;assembly&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">asm</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">asm</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;accession&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">asm</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;no accession or name in genome_data/assembly&quot;</span><span class="p">)</span>
+                <span class="n">acc</span> <span class="o">=</span> <span class="n">asm</span><span class="p">[</span><span class="s2">&quot;accession&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;v&quot;</span><span class="p">)</span>
+                <span class="n">asm</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">acc</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;using &quot;</span><span class="si">%s</span><span class="s1">&quot; as assembly.name&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]),</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;no &#39;assembly&#39; data provided in genome_data&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="prepare_genome.update_accession"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.prepare_genome.prepare_genome.update_accession">[docs]</a>    <span class="k">def</span> <span class="nf">update_accession</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">and</span> <span class="s2">&quot;assembly&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">asm</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;accession&quot;</span> <span class="ow">in</span> <span class="n">asm</span> <span class="ow">and</span> <span class="n">asm</span><span class="p">[</span><span class="s2">&quot;accession&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;GCF_&quot;</span><span class="p">):</span>
+                <span class="c1">### CHANGE TO GCA</span>
+                <span class="n">data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;accession&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;accession&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;GCF_&quot;</span><span class="p">,</span> <span class="s2">&quot;GCA_&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;using &quot;</span><span class="si">%s</span><span class="s1">&quot; as assembly.accession&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;accession&quot;</span><span class="p">]),</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;no &#39;assembly&#39; data provided in genome_data&quot;</span><span class="p">)</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

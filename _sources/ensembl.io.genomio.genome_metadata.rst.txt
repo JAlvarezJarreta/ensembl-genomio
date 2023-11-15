@@ -1,0 +1,34 @@
+ensembl.io.genomio.genome\_metadata package
+===========================================
+
+.. automodule:: ensembl.io.genomio.genome_metadata
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.io.genomio.genome\_metadata.dump module
+-----------------------------------------------
+
+.. automodule:: ensembl.io.genomio.genome_metadata.dump
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.genome\_metadata.extend module
+-------------------------------------------------
+
+.. automodule:: ensembl.io.genomio.genome_metadata.extend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.genome\_metadata.prepare module
+--------------------------------------------------
+
+.. automodule:: ensembl.io.genomio.genome_metadata.prepare
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>ensembl.io.genomio.events package &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/agogo.css?v=cc331ede" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-ensembl.io.genomio.events">
+<span id="ensembl-io-genomio-events-package"></span><h1>ensembl.io.genomio.events package<a class="headerlink" href="#module-ensembl.io.genomio.events" title="Permalink to this heading">¶</a></h1>
+<p>Gene events handling module.</p>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-ensembl.io.genomio.events.dump">
+<span id="ensembl-io-genomio-events-dump-module"></span><h2>ensembl.io.genomio.events.dump module<a class="headerlink" href="#module-ensembl.io.genomio.events.dump" title="Permalink to this heading">¶</a></h2>
+<p>Module to dump stable id events from an Ensembl Core database</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.DumpStableIDs">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.events.dump.</span></span><span class="sig-name descname"><span class="pre">DumpStableIDs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ensembl.brc4.runnable.html#ensembl.brc4.runnable.core_server.CoreServer" title="ensembl.brc4.runnable.core_server.CoreServer"><span class="pre">CoreServer</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#DumpStableIDs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.DumpStableIDs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>An processor that create events from pairs of ids and can print those events out.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.DumpStableIDs.server">
+<span class="sig-name descname"><span class="pre">server</span></span><a class="headerlink" href="#ensembl.io.genomio.events.dump.DumpStableIDs.server" title="Permalink to this definition">¶</a></dt>
+<dd><p>a core server set to a database, to retrieve the data from.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.DumpStableIDs.extend_event">
+<span class="sig-name descname"><span class="pre">extend_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ensembl.io.genomio.events.dump.StableIdEvent" title="ensembl.io.genomio.events.dump.StableIdEvent"><span class="pre">StableIdEvent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ensembl.io.genomio.events.dump.StableIdEvent" title="ensembl.io.genomio.events.dump.StableIdEvent"><span class="pre">StableIdEvent</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#DumpStableIDs.extend_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.DumpStableIDs.extend_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an event, aggregate ids in the ‘from’ and ‘to’ sets, to connect the whole group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event</strong> – the event to extend.</p></li>
+<li><p><strong>from_list</strong> – A dict a the from ids, and their corresponding to ids.</p></li>
+<li><p><strong>to_list</strong> – A dict of the to ids, and their corresponding from ids.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple of the extended event, and the from_list and to_list from which the ids that
+have been added to the event have been removed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.DumpStableIDs.get_history">
+<span class="sig-name descname"><span class="pre">get_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#DumpStableIDs.get_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.DumpStableIDs.get_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve all events from a database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of all events.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.DumpStableIDs.get_mapping_sessions">
+<span class="sig-name descname"><span class="pre">get_mapping_sessions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#DumpStableIDs.get_mapping_sessions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.DumpStableIDs.get_mapping_sessions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the mapping sessions from the connected database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>{‘id: str, ‘release’: str, ‘date’: str}.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of sessions, as dicts</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.DumpStableIDs.get_pairs">
+<span class="sig-name descname"><span class="pre">get_pairs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ensembl.io.genomio.events.dump.Pair" title="ensembl.io.genomio.events.dump.Pair"><span class="pre">Pair</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#DumpStableIDs.get_pairs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.DumpStableIDs.get_pairs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve all pair of ids for a given session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session_id</strong> – id of a session from the connected database.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>{‘old_id’: str, ‘new_id’: str}.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of all pairs of ids, as dicts</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.DumpStableIDs.get_pairs_from_to">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_pairs_from_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ensembl.io.genomio.events.dump.Pair" title="ensembl.io.genomio.events.dump.Pair"><span class="pre">Pair</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#DumpStableIDs.get_pairs_from_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.DumpStableIDs.get_pairs_from_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>From a list of Pairs, extract a mapping of all ids from a given old id (from_list),
+and a mapping of all ids to a given new id (to_list).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pairs</strong> – list of Pairs.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>from_list
+to_list</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple of 2 values</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.DumpStableIDs.make_events">
+<span class="sig-name descname"><span class="pre">make_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ensembl.io.genomio.events.dump.Pair" title="ensembl.io.genomio.events.dump.Pair"><span class="pre">Pair</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#DumpStableIDs.make_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.DumpStableIDs.make_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of pairs, create events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pairs</strong> – list of Pair.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of events.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.DumpStableIDs.print_events">
+<span class="sig-name descname"><span class="pre">print_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">events</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ensembl.io.genomio.events.dump.StableIdEvent" title="ensembl.io.genomio.events.dump.StableIdEvent"><span class="pre">StableIdEvent</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#DumpStableIDs.print_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.DumpStableIDs.print_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print events in a format for BRC.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>events</strong> – list of events for a given genome.</p></li>
+<li><p><strong>output_file</strong> – where the events will be printed.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.Pair">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.events.dump.</span></span><span class="sig-name descname"><span class="pre">Pair</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#Pair"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.Pair" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Simple old_id - new_id pair representation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.Pair.has_new_id">
+<span class="sig-name descname"><span class="pre">has_new_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#Pair.has_new_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.Pair.has_new_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the pair has a new_id</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.Pair.has_old_id">
+<span class="sig-name descname"><span class="pre">has_old_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#Pair.has_old_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.Pair.has_old_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the pair has an old_id</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.Pair.is_empty">
+<span class="sig-name descname"><span class="pre">is_empty</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#Pair.is_empty"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.Pair.is_empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test if the current pair has no id.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.events.dump.</span></span><span class="sig-name descname"><span class="pre">StableIdEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">release</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents a stable id event from one gene set version to another one. Various events:
+- new genes
+- deleted genes
+- merged genes (several genes to one)
+- split genes (one gene to several)
+- mixed (several genes to several)</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.from_list">
+<span class="sig-name descname"><span class="pre">from_list</span></span><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.from_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of genes the previous gene set.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.to_list">
+<span class="sig-name descname"><span class="pre">to_list</span></span><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.to_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of genes in the new gene set.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.release">
+<span class="sig-name descname"><span class="pre">release</span></span><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.release" title="Permalink to this definition">¶</a></dt>
+<dd><p>New gene set release name.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.date">
+<span class="sig-name descname"><span class="pre">date</span></span><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Date of the new gene set.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the event (will be updated automatically).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.pairs">
+<span class="sig-name descname"><span class="pre">pairs</span></span><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.pairs" title="Permalink to this definition">¶</a></dt>
+<dd><p>All pair of ids for this event.</p>
+</dd></dl>
+
+<p>Any gene set before 2019-09 is dubbed pre-BRC4.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.add_from">
+<span class="sig-name descname"><span class="pre">add_from</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.add_from"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.add_from" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store an id in the from_set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.add_pair">
+<span class="sig-name descname"><span class="pre">add_pair</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pair</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ensembl.io.genomio.events.dump.Pair" title="ensembl.io.genomio.events.dump.Pair"><span class="pre">Pair</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.add_pair"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.add_pair" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keeps a record of this pair.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pair</strong> – a Pair to record.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – can’t add an empty pair.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.add_pairs">
+<span class="sig-name descname"><span class="pre">add_pairs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ensembl.io.genomio.events.dump.Pair" title="ensembl.io.genomio.events.dump.Pair"><span class="pre">Pair</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.add_pairs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.add_pairs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provided all the pairs, keep those that are used by this event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pairs</strong> – list of Pair.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.add_to">
+<span class="sig-name descname"><span class="pre">add_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.add_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.add_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store an id in the from_set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.brc_format_1">
+<span class="sig-name descname"><span class="pre">brc_format_1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.brc_format_1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.brc_format_1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list events, one line per initial ID, in the following TSV format:
+- old gene id
+- event name
+- release
+- release date
+- list of old gene ids in the event (comma-separated)
+- list of new gene ids in the event (comma-separated)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.brc_format_2">
+<span class="sig-name descname"><span class="pre">brc_format_2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.brc_format_2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.brc_format_2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of combination of genes, one line per combination of old_id - new_ids, in the
+following TSV format:
+- old gene id
+- new gene id
+- event name
+- release
+- release date</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.clean_pairs">
+<span class="sig-name descname"><span class="pre">clean_pairs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.clean_pairs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.clean_pairs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove the empty old pairs when the event is not ‘new’.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.clean_set">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clean_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">this_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Set</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Set</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.clean_set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.clean_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes any empty elements from a list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>this_list</strong> – list of items, so of which can be empty/None.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The cleaned list.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.get_full_release">
+<span class="sig-name descname"><span class="pre">get_full_release</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.get_full_release"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.get_full_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the expanded release name, pre-BRC4 or <cite>BRC4 = build</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.get_name">
+<span class="sig-name descname"><span class="pre">get_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.get_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.get_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the name for this event, update it beforehand.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.set_date">
+<span class="sig-name descname"><span class="pre">set_date</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.set_date"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.set_date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the date of the release for this event</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.StableIdEvent.set_release">
+<span class="sig-name descname"><span class="pre">set_release</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">release</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#StableIdEvent.set_release"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.StableIdEvent.set_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the release name of the event</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.UnsupportedEvent">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.events.dump.</span></span><span class="sig-name descname"><span class="pre">UnsupportedEvent</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#UnsupportedEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.UnsupportedEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></p>
+<p>If an event is not supported</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.dump.main">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.events.dump.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/dump.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.dump.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main entrypoint</p>
+</dd></dl>
+
+</section>
+<section id="module-ensembl.io.genomio.events.format">
+<span id="ensembl-io-genomio-events-format-module"></span><h2>ensembl.io.genomio.events.format module<a class="headerlink" href="#module-ensembl.io.genomio.events.format" title="Permalink to this heading">¶</a></h2>
+<p>Module to map stable ids in a file, given a mapping.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.format.IdsMapper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.events.format.</span></span><span class="sig-name descname"><span class="pre">IdsMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">map_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/events/format.html#IdsMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.format.IdsMapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Simple mapper object, to cleanly get a mapping dict.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.format.load_list">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.events.format.</span></span><span class="sig-name descname"><span class="pre">load_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/format.html#load_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.format.load_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a simple list from a file.</p>
+</dd></dl>
+
+</section>
+<section id="module-ensembl.io.genomio.events.load">
+<span id="ensembl-io-genomio-events-load-module"></span><h2>ensembl.io.genomio.events.load module<a class="headerlink" href="#module-ensembl.io.genomio.events.load" title="Permalink to this heading">¶</a></h2>
+<p>Provided a file with events, load them in a core database.</p>
+<p>cf the load_events functions for the events tab file format.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.EventCollection">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.events.load.</span></span><span class="sig-name descname"><span class="pre">EventCollection</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#EventCollection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.EventCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>“Collection of events with loader/writer in various formats.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.EventCollection.add_deletes">
+<span class="sig-name descname"><span class="pre">add_deletes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">genes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">release_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'release_name'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">release_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'release_date'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#EventCollection.add_deletes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.EventCollection.add_deletes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add deletion events from a list of deleted genes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.EventCollection.load_events">
+<span class="sig-name descname"><span class="pre">load_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#EventCollection.load_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.EventCollection.load_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load events from input file.
+Expected tab file columns: old_id, new_id, event_name, release, release_date</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.EventCollection.load_events_from_gene_diff">
+<span class="sig-name descname"><span class="pre">load_events_from_gene_diff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">release_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'release_name'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">release_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'release_date'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#EventCollection.load_events_from_gene_diff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.EventCollection.load_events_from_gene_diff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load events from input file from gene_diff.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.EventCollection.remap_to_ids">
+<span class="sig-name descname"><span class="pre">remap_to_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">map_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#EventCollection.remap_to_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.EventCollection.remap_to_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Using a mapping dict, remap the to_id of all events.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.EventCollection.write_events_to_db">
+<span class="sig-name descname"><span class="pre">write_events_to_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#EventCollection.write_events_to_db"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.EventCollection.write_events_to_db" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert the events in the core database.
+A mapping session is created for each different ‘release’.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.EventCollection.write_events_to_file">
+<span class="sig-name descname"><span class="pre">write_events_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#EventCollection.write_events_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.EventCollection.write_events_to_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the events to a file.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.IdEvent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.events.load.</span></span><span class="sig-name descname"><span class="pre">IdEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">release</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">release_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#IdEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.IdEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Simple representation for the events from the input file</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.IdEvent.event">
+<span class="sig-name descname"><span class="pre">event</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#ensembl.io.genomio.events.load.IdEvent.event" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.IdEvent.from_id">
+<span class="sig-name descname"><span class="pre">from_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#ensembl.io.genomio.events.load.IdEvent.from_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.IdEvent.is_change">
+<span class="sig-name descname"><span class="pre">is_change</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#IdEvent.is_change"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.IdEvent.is_change" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the event is an update of an existing gene.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.IdEvent.release">
+<span class="sig-name descname"><span class="pre">release</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#ensembl.io.genomio.events.load.IdEvent.release" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.IdEvent.release_date">
+<span class="sig-name descname"><span class="pre">release_date</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#ensembl.io.genomio.events.load.IdEvent.release_date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.IdEvent.to_id">
+<span class="sig-name descname"><span class="pre">to_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#ensembl.io.genomio.events.load.IdEvent.to_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.MapSession">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.events.load.</span></span><span class="sig-name descname"><span class="pre">MapSession</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">release</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">release_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#MapSession"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.MapSession" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Simple mapping_sessions representation from the input file</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.MapSession.add_event">
+<span class="sig-name descname"><span class="pre">add_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ensembl.io.genomio.events.load.IdEvent" title="ensembl.io.genomio.events.load.IdEvent"><span class="pre">IdEvent</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#MapSession.add_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.MapSession.add_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an event to this mapping_session</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.events.load.main">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.events.load.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/events/load.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.events.load.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main entrypoint</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+              <br/>
+              <a href="_sources/ensembl.io.genomio.events.rst.txt"
+                rel="nofollow">Show Source</a>
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

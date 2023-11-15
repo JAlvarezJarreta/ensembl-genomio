@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>ensembl.io.genomio.gff3 package &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/agogo.css?v=cc331ede" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-ensembl.io.genomio.gff3">
+<span id="ensembl-io-genomio-gff3-package"></span><h1>ensembl.io.genomio.gff3 package<a class="headerlink" href="#module-ensembl.io.genomio.gff3" title="Permalink to this heading">¶</a></h1>
+<p>GFF3 files processing module.</p>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-ensembl.io.genomio.gff3.extract_annotation">
+<span id="ensembl-io-genomio-gff3-extract-annotation-module"></span><h2>ensembl.io.genomio.gff3.extract_annotation module<a class="headerlink" href="#module-ensembl.io.genomio.gff3.extract_annotation" title="Permalink to this heading">¶</a></h2>
+<p>Simple representation of gene features functional annotation extracted from a GFF3 file.</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.extract_annotation.AnnotationError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.gff3.extract_annotation.</span></span><span class="sig-name descname"><span class="pre">AnnotationError</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/extract_annotation.html#AnnotationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.extract_annotation.AnnotationError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>If anything wrong happens when recording annotations.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.extract_annotation.DuplicateIdError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.gff3.extract_annotation.</span></span><span class="sig-name descname"><span class="pre">DuplicateIdError</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/extract_annotation.html#DuplicateIdError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.extract_annotation.DuplicateIdError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Trying to add a feature with an ID already in use.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.gff3.extract_annotation.</span></span><span class="sig-name descname"><span class="pre">FunctionalAnnotations</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/extract_annotation.html#FunctionalAnnotations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>List of annotations extracted from a GFF3 file.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.add_feature">
+<span class="sig-name descname"><span class="pre">add_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feat_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/extract_annotation.html#FunctionalAnnotations.add_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.add_feature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add annotation for a feature of a given type. If a parent_id is provided, record the relatioship.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature</strong> – The feature to create an annotation.</p></li>
+<li><p><strong>feat_type</strong> – Type of the feature to annotate.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.add_parent">
+<span class="sig-name descname"><span class="pre">add_parent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">child_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/extract_annotation.html#FunctionalAnnotations.add_parent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.add_parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record a parent-child IDs relationship for a given parent biotype.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.get_features">
+<span class="sig-name descname"><span class="pre">get_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feat_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/extract_annotation.html#FunctionalAnnotations.get_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.get_features" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all feature annotations for the requested type.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.get_parent">
+<span class="sig-name descname"><span class="pre">get_parent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">child_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/extract_annotation.html#FunctionalAnnotations.get_parent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.get_parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the parent ID of a given child for a given parent biotype.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.product_is_informative">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">product_is_informative</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">product</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feat_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/extract_annotation.html#FunctionalAnnotations.product_is_informative"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.product_is_informative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the product name contains informative words, False otherwise.</p>
+<p>It is considered uninformative when the description contains words such as “hypothetical” or
+or “putative”. If a feature ID is provided, consider it uninformative as well (we do not want
+descriptions to be just the ID).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>product</strong> – A product name.</p></li>
+<li><p><strong>feat_id</strong> – Feature ID (optional).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.to_json">
+<span class="sig-name descname"><span class="pre">to_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/extract_annotation.html#FunctionalAnnotations.to_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.to_json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print out the current annotation list in a json file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>out_path</strong> – JSON file path where to write the data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.extract_annotation.MissingParentError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.gff3.extract_annotation.</span></span><span class="sig-name descname"><span class="pre">MissingParentError</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/extract_annotation.html#MissingParentError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.extract_annotation.MissingParentError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Trying to add a feature without an expected parent.</p>
+</dd></dl>
+
+</section>
+<section id="module-ensembl.io.genomio.gff3.process">
+<span id="ensembl-io-genomio-gff3-process-module"></span><h2>ensembl.io.genomio.gff3.process module<a class="headerlink" href="#module-ensembl.io.genomio.gff3.process" title="Permalink to this heading">¶</a></h2>
+<p>Standardize the gene model representation of a GFF3 file, and extract the functional annotation
+in a separate file.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFGeneMerger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.gff3.process.</span></span><span class="sig-name descname"><span class="pre">GFFGeneMerger</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFGeneMerger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFGeneMerger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">GFFParserCommon</span></code></p>
+<p>Specialized class to merge split genes in a GFF3 file, prior to further parsing.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFGeneMerger.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_gff_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_gff_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFGeneMerger.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFGeneMerger.merge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge genes in a gff that are split in multiple lines</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFParserError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.gff3.process.</span></span><span class="sig-name descname"><span class="pre">GFFParserError</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFParserError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFParserError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Error when parsing a GFF3 file.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.gff3.process.</span></span><span class="sig-name descname"><span class="pre">GFFSimplifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">genome_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_missing_stable_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">GFFParserCommon</span></code></p>
+<p>Parse a GGF3 file and output a cleaned up GFF3 + annotation json file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ensembl.io.genomio.gff3.process.GFFParserError" title="ensembl.io.genomio.gff3.process.GFFParserError"><strong>GFFParserError</strong></a> – If an error cannot be automatically fixed.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.allow_pseudogene_with_CDS">
+<span class="sig-name descname"><span class="pre">allow_pseudogene_with_CDS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.allow_pseudogene_with_CDS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.build_transcript">
+<span class="sig-name descname"><span class="pre">build_transcript</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gene</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqFeature</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.build_transcript"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.build_transcript" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a transcript with same metadata as the gene provided.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.cds_gene">
+<span class="sig-name descname"><span class="pre">cds_gene</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqFeature</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.cds_gene"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.cds_gene" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a gene created for a lone CDS.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.clean_extra_exons">
+<span class="sig-name descname"><span class="pre">clean_extra_exons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gene</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqFeature</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.clean_extra_exons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.clean_extra_exons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove extra exons, already existing in the mRNA.</p>
+<p>This is a special case where a gene contains proper mRNAs, etc. but also
+extra exons for the same features. Those exons usually have an ID starting with
+“id-”, so that’s what we use to detect them.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.current_stable_id_number">
+<span class="sig-name descname"><span class="pre">current_stable_id_number</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.current_stable_id_number" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.exclude_seq_regions">
+<span class="sig-name descname"><span class="pre">exclude_seq_regions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.exclude_seq_regions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.format_gene_segments">
+<span class="sig-name descname"><span class="pre">format_gene_segments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transcript</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqFeature</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.format_gene_segments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.format_gene_segments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the equivalent Ensembl biotype feature for gene segment transcript features.</p>
+<p>Supported features: “C_gene_segment” and “V_gene_segment”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>transcript</strong> – Gene segment transcript feature.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.format_mobile_element">
+<span class="sig-name descname"><span class="pre">format_mobile_element</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqFeature</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.format_mobile_element"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.format_mobile_element" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a mobile_genetic_element feature, transform it into a transposable_element</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.gene_cds_skip_others">
+<span class="sig-name descname"><span class="pre">gene_cds_skip_others</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.gene_cds_skip_others" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.gene_to_cds">
+<span class="sig-name descname"><span class="pre">gene_to_cds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gene</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">SeqFeature</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.gene_to_cds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.gene_to_cds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of transcripts (with exons), from a gene with only CDS children.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.gene_to_exon">
+<span class="sig-name descname"><span class="pre">gene_to_exon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gene</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqFeature</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.gene_to_exon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.gene_to_exon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an intermediary transcript for a gene with direct exon children.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.generate_stable_id">
+<span class="sig-name descname"><span class="pre">generate_stable_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.generate_stable_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.generate_stable_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a new unique gene stable_id with a prefix.</p>
+<p>The id is made up of a prefix and a number, which is auto incremented.
+Define the prefix with the param “stable_id_prefix”,
+or use the genome organism_abbrev and prepend “<a href="#id1"><span class="problematic" id="id2">TMP_</span></a>” to it.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.min_id_length">
+<span class="sig-name descname"><span class="pre">min_id_length</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.min_id_length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.move_cds_to_mrna">
+<span class="sig-name descname"><span class="pre">move_cds_to_mrna</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gene</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqFeature</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.move_cds_to_mrna"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.move_cds_to_mrna" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move CDS child features of a gene, to the mRNA.</p>
+<p>This is to fix the case where we have the following structure:
+gene -&gt; [ mRNA, CDSs ]
+and change it to
+gene -&gt; [ mRNA -&gt; [ CDSs ] ]
+The mRNA might have exons, in which case check that they match the CDS coordinates.</p>
+<p>Raises an exception if the feature structure is not recognized.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transcript</strong> (<em>A gene with only one</em>) – </p></li>
+<li><p><strong>fix.</strong> (<em>to check and</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The gene where the CDSs have been moved, if needed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_cds_id">
+<span class="sig-name descname"><span class="pre">normalize_cds_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cds_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.normalize_cds_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_cds_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the CDS ID is proper:
+- Remove any unnecessary prefixes around the CDS ID
+- Delete the ID if it is not proper</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_gene">
+<span class="sig-name descname"><span class="pre">normalize_gene</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gene</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fail_types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqFeature</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.normalize_gene"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_gene" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a normalized gene structure, separate from the functional elements.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gene</strong> – Gene object to normalize.</p></li>
+<li><p><strong>functional_annotation</strong> – List of feature annotations (appended by this method).</p></li>
+<li><p><strong>fail_types</strong> – List of feature types that are not supported (appended by this method).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_gene_id">
+<span class="sig-name descname"><span class="pre">normalize_gene_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gene</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.normalize_gene_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_gene_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove any unnecessary prefixes around the gene ID.</p>
+<p>Generate a new stable id if it is not recognized as valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>gene</strong> – Gene feature to normalize.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A normalized gene id.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_pseudogene_cds">
+<span class="sig-name descname"><span class="pre">normalize_pseudogene_cds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gene</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.normalize_pseudogene_cds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_pseudogene_cds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensure CDS from a pseudogene have a proper ID
+- different from the gene
+- derived from the gene if it is not proper</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_transcript_id">
+<span class="sig-name descname"><span class="pre">normalize_transcript_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gene_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.normalize_transcript_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_transcript_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use a gene ID and a number to make a formatted transcript ID.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.remove_cds_from_pseudogene">
+<span class="sig-name descname"><span class="pre">remove_cds_from_pseudogene</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gene</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.remove_cds_from_pseudogene"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.remove_cds_from_pseudogene" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove CDS from a pseudogene
+This assumes the CDSs are sub features of the transcript or the gene</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.remove_prefixes">
+<span class="sig-name descname"><span class="pre">remove_prefixes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefixes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.remove_prefixes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.remove_prefixes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove prefixes from an identifier if they are found
+Return the unaltered identifier otherwise</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.simpler_gff3">
+<span class="sig-name descname"><span class="pre">simpler_gff3</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_gff_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.simpler_gff3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.simpler_gff3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a GFF3 from INSDC and rewrite it in a simpler version,
+and also write a functional_annotation file</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.skip_unrecognized">
+<span class="sig-name descname"><span class="pre">skip_unrecognized</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.skip_unrecognized" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.stable_id_prefix">
+<span class="sig-name descname"><span class="pre">stable_id_prefix</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.stable_id_prefix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.transcript_for_gene">
+<span class="sig-name descname"><span class="pre">transcript_for_gene</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gene</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqFeature</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.transcript_for_gene"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.transcript_for_gene" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a transcript, from a gene without one.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.transcript_gene">
+<span class="sig-name descname"><span class="pre">transcript_gene</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ncrna</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SeqFeature</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqFeature</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.transcript_gene"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.transcript_gene" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a gene for lone transcripts: ‘gene’ for tRNA/rRNA, and ‘ncRNA’ for all others</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ncrna</strong> – the transcript for which we want to create a gene.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The gene that contains the transcript.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.valid_id">
+<span class="sig-name descname"><span class="pre">valid_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#GFFSimplifier.valid_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.valid_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that the format of a stable id is valid.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.GFFSimplifier.validate_gene_id">
+<span class="sig-name descname"><span class="pre">validate_gene_id</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#ensembl.io.genomio.gff3.process.GFFSimplifier.validate_gene_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.Records">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.gff3.process.</span></span><span class="sig-name descname"><span class="pre">Records</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#Records"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.Records" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></p>
+<p>List of GFF3 SeqRecords.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.gff3.process.Records.to_gff">
+<span class="sig-name descname"><span class="pre">to_gff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_gff_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/gff3/process.html#Records.to_gff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.gff3.process.Records.to_gff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print out the current list of records in a GFF3 file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>out_gff_path</strong> – Path to GFF3 file where to write the records.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+              <br/>
+              <a href="_sources/ensembl.io.genomio.gff3.rst.txt"
+                rel="nofollow">Show Source</a>
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

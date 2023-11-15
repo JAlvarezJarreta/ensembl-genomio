@@ -1,0 +1,26 @@
+ensembl.io.genomio.seq\_region package
+======================================
+
+.. automodule:: ensembl.io.genomio.seq_region
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.io.genomio.seq\_region.dump module
+------------------------------------------
+
+.. automodule:: ensembl.io.genomio.seq_region.dump
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.seq\_region.prepare module
+---------------------------------------------
+
+.. automodule:: ensembl.io.genomio.seq_region.prepare
+   :members:
+   :undoc-members:
+   :show-inheritance:

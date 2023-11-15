@@ -1,0 +1,15 @@
+ensembl.brc4 package
+====================
+
+.. automodule:: ensembl.brc4
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   ensembl.brc4.runnable

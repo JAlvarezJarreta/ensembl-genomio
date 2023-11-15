@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.io.genomio.database.factory &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.io.genomio.database.factory</h1><div class="highlight"><pre>
+<span></span><span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;Generates one JSON file per metadata type inside `manifest`, including the manifest itself.</span>
+
+<span class="sd">Can be imported as a module and called as a script as well, with the same parameters and expected outcome.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.brc4.runnable.core_server</span> <span class="kn">import</span> <span class="n">CoreServer</span>
+<span class="kn">from</span> <span class="nn">ensembl.utils.argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
+
+
+<div class="viewcode-block" id="format_db_data"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.database.html#ensembl.io.genomio.database.factory.format_db_data">[docs]</a><span class="k">def</span> <span class="nf">format_db_data</span><span class="p">(</span><span class="n">server</span><span class="p">:</span> <span class="n">CoreServer</span><span class="p">,</span> <span class="n">dbs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">brc_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns metadata from a list of databases on a server.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        server: Server where all the databases are hosted.</span>
+<span class="sd">        dbs: List of database names.</span>
+<span class="sd">        brc_mode: If true, assign ``BRC4.organism_abbrev`` as the species, and ``BRC4.component`` as the</span>
+<span class="sd">            division. Otherwise, the species will be ``species.production_name`` and the division will be</span>
+<span class="sd">            ``species.division``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of dictionaries with 3 keys: &quot;database&quot;, &quot;species&quot; and &quot;division&quot;.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">databases_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">db</span> <span class="ow">in</span> <span class="n">dbs</span><span class="p">:</span>
+        <span class="n">server</span><span class="o">.</span><span class="n">set_database</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">get_db_metadata</span><span class="p">()</span>
+
+        <span class="n">species</span> <span class="o">=</span> <span class="n">get_metadata_value</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="s2">&quot;species.production_name&quot;</span><span class="p">)</span>
+        <span class="n">division</span> <span class="o">=</span> <span class="n">get_metadata_value</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="s2">&quot;species.division&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">brc_mode</span><span class="p">:</span>
+            <span class="n">brc_organism</span> <span class="o">=</span> <span class="n">get_metadata_value</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="s2">&quot;BRC4.organism_abbrev&quot;</span><span class="p">)</span>
+            <span class="n">brc_component</span> <span class="o">=</span> <span class="n">get_metadata_value</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="s2">&quot;BRC4.component&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">brc_organism</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">species</span> <span class="o">=</span> <span class="n">brc_organism</span>
+            <span class="k">if</span> <span class="n">brc_component</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">division</span> <span class="o">=</span> <span class="n">brc_component</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">division</span><span class="p">:</span>
+            <span class="n">division</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
+
+        <span class="n">db_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;database&quot;</span><span class="p">:</span> <span class="n">db</span><span class="p">,</span>
+            <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="n">species</span><span class="p">,</span>
+            <span class="s2">&quot;division&quot;</span><span class="p">:</span> <span class="n">division</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">databases_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">db_data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">databases_data</span></div>
+
+
+<div class="viewcode-block" id="get_metadata_value"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.database.html#ensembl.io.genomio.database.factory.get_metadata_value">[docs]</a><span class="k">def</span> <span class="nf">get_metadata_value</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">],</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the first element in the list assigned to `key` in `metadata`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        metadata: Map of metadata information to lists of values.</span>
+<span class="sd">        key: Metadata key to search for.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">key</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">)</span> <span class="ow">and</span> <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.database.html#ensembl.io.genomio.database.factory.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main script entry-point.&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Get the metadata from a list of databases on a server (in JSON format).&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_server_arguments</span><span class="p">()</span>
+    <span class="c1"># Add filter arguments</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--prefix&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Prefix to filter the databases&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--build&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Build to filter the databases&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--version&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;EnsEMBL version to filter the databases&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--db_regex&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Regular expression to match database names against&quot;</span><span class="p">)</span>
+    <span class="c1"># Add flags</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--brc_mode&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable BRC mode, i.e. use organism_abbrev for species, component for division&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">server</span> <span class="o">=</span> <span class="n">CoreServer</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
+    <span class="n">databases</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">get_cores</span><span class="p">(</span>
+        <span class="n">prefix</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">prefix</span><span class="p">,</span> <span class="n">build</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">build</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">version</span><span class="p">,</span> <span class="n">dbname_re</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">db_regex</span>
+    <span class="p">)</span>
+    <span class="n">databases_data</span> <span class="o">=</span> <span class="n">format_db_data</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">databases</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">brc_mode</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">databases_data</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

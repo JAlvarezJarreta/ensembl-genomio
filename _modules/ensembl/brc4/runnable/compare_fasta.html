@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.brc4.runnable.compare_fasta &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.brc4.runnable.compare_fasta</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!env python3</span>
+<span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span> <span class="nn">eHive</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">Bio</span> <span class="kn">import</span> <span class="n">SeqIO</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.brc4.runnable.seqregion_parser</span> <span class="kn">import</span> <span class="n">SeqregionParser</span>
+<span class="kn">from</span> <span class="nn">ensembl.io.genomio.utils.archive_utils</span> <span class="kn">import</span> <span class="n">open_gz_file</span>
+
+
+<div class="viewcode-block" id="SeqGroup"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.SeqGroup">[docs]</a><span class="k">class</span> <span class="nc">SeqGroup</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span> <span class="o">=</span> <span class="n">sequence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">identifier</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_id</span><span class="p">(</span><span class="n">identifier</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ids</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ids</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SeqGroup.add_id"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.SeqGroup.add_id">[docs]</a>    <span class="k">def</span> <span class="nf">add_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identifier</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">identifier</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ids</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="compare_fasta"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta">[docs]</a><span class="k">class</span> <span class="nc">compare_fasta</span><span class="p">(</span><span class="n">eHive</span><span class="o">.</span><span class="n">BaseRunnable</span><span class="p">):</span>
+<div class="viewcode-block" id="compare_fasta.param_defaults"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.param_defaults">[docs]</a>    <span class="k">def</span> <span class="nf">param_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+
+<div class="viewcode-block" id="compare_fasta.run"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">report</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;report&quot;</span><span class="p">)</span>
+        <span class="n">fasta1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;fasta1&quot;</span><span class="p">)</span>
+        <span class="n">fasta2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;fasta2&quot;</span><span class="p">)</span>
+        <span class="n">map_dna_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;seq_regions&quot;</span><span class="p">)</span>
+        <span class="n">output_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;output_dir&quot;</span><span class="p">)</span>
+        <span class="n">species</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;species&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;comparison_name&quot;</span><span class="p">)</span>
+        <span class="n">accession</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;accession&quot;</span><span class="p">)</span>
+
+        <span class="n">map_dna</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_map</span><span class="p">(</span><span class="n">map_dna_path</span><span class="p">)</span>
+        <span class="n">seq1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fasta</span><span class="p">(</span><span class="n">fasta1</span><span class="p">,</span> <span class="n">map_dna</span><span class="p">)</span>
+        <span class="n">seq2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fasta</span><span class="p">(</span><span class="n">fasta2</span><span class="p">,</span> <span class="n">map_dna</span><span class="p">)</span>
+
+        <span class="p">(</span><span class="n">stats</span><span class="p">,</span> <span class="n">diffs</span><span class="p">,</span> <span class="n">seq_map</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compare_seqs</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">)</span>
+        <span class="c1"># Print mapping to a file (add report data)</span>
+        <span class="n">map_file</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">species</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.map&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">print_map</span><span class="p">(</span><span class="n">seq_map</span><span class="p">,</span> <span class="n">map_file</span><span class="p">,</span> <span class="n">report</span><span class="p">,</span> <span class="n">accession</span><span class="p">)</span>
+
+        <span class="c1"># Print full list of results in a file</span>
+        <span class="n">output_file</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">species</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.log&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Write results in </span><span class="si">{</span><span class="n">output_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_fh</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">diffs</span><span class="p">:</span>
+                <span class="n">out_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Print the stats separately</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="n">species</span><span class="p">,</span> <span class="s2">&quot;stats&quot;</span><span class="p">:</span> <span class="n">stats</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataflow</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="compare_fasta.print_map"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.print_map">[docs]</a>    <span class="k">def</span> <span class="nf">print_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">map_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">report_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">accession</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">report_parser</span> <span class="o">=</span> <span class="n">SeqregionParser</span><span class="p">()</span>
+        <span class="n">report_seq</span> <span class="o">=</span> <span class="n">report_parser</span><span class="o">.</span><span class="n">get_report_regions</span><span class="p">(</span><span class="n">report_file</span><span class="p">,</span> <span class="n">accession</span><span class="p">)</span>
+        <span class="n">report</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_report_to_map</span><span class="p">(</span><span class="n">seq_map</span><span class="p">,</span> <span class="n">report_seq</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Write map in </span><span class="si">{</span><span class="n">map_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">map_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_fh</span><span class="p">:</span>
+            <span class="n">out_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">report</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="compare_fasta.add_report_to_map"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.add_report_to_map">[docs]</a>    <span class="k">def</span> <span class="nf">add_report_to_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">report_seq</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="n">accession_version</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\.\d+$&quot;</span>
+        <span class="n">report</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">insdc_name</span><span class="p">,</span> <span class="n">old_name</span> <span class="ow">in</span> <span class="n">seq_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">insdc_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">report_seq</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No INSDC </span><span class="si">%s</span><span class="s2"> found in report&quot;</span> <span class="o">%</span> <span class="n">insdc_name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">seqr</span> <span class="o">=</span> <span class="n">report_seq</span><span class="p">[</span><span class="n">insdc_name</span><span class="p">]</span>
+                <span class="n">seqr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">old_name</span>
+                <span class="n">seqr</span><span class="p">[</span><span class="s2">&quot;EBI_seq_region_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">old_name</span>
+                <span class="n">brc4_name</span> <span class="o">=</span> <span class="n">insdc_name</span>
+                <span class="n">brc4_name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">accession_version</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">brc4_name</span><span class="p">)</span>
+                <span class="n">seqr</span><span class="p">[</span><span class="s2">&quot;BRC4_seq_region_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">brc4_name</span>
+                <span class="n">syns</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;INSDC&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">insdc_name</span><span class="p">}]</span>
+                <span class="n">seqr</span><span class="p">[</span><span class="s2">&quot;synonyms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">syns</span>
+                <span class="n">report</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seqr</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">report</span></div>
+
+<div class="viewcode-block" id="compare_fasta.get_map"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.get_map">[docs]</a>    <span class="k">def</span> <span class="nf">get_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Read file </span><span class="si">{</span><span class="n">map_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_json</span><span class="p">(</span><span class="n">map_path</span><span class="p">)</span>
+
+        <span class="n">map_dna</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">seqr</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">seqr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;synonyms&quot;</span> <span class="ow">in</span> <span class="n">seqr</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">syn</span> <span class="ow">in</span> <span class="n">seqr</span><span class="p">[</span><span class="s2">&quot;synonyms&quot;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">syn</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;INSDC&quot;</span><span class="p">:</span>
+                        <span class="n">map_dna</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">syn</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">map_dna</span></div>
+
+<div class="viewcode-block" id="compare_fasta.get_json"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.get_json">[docs]</a>    <span class="k">def</span> <span class="nf">get_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">json_file</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">json_file</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="compare_fasta.build_seq_dict"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.build_seq_dict">[docs]</a>    <span class="k">def</span> <span class="nf">build_seq_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seqs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a seq dict taking duplicates into account&quot;&quot;&quot;</span>
+
+        <span class="n">seqs_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">seqs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">seqs_dict</span><span class="p">:</span>
+                <span class="n">seqs_dict</span><span class="p">[</span><span class="n">seq</span><span class="p">]</span><span class="o">.</span><span class="n">add_id</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">seqs_dict</span><span class="p">[</span><span class="n">seq</span><span class="p">]</span> <span class="o">=</span> <span class="n">SeqGroup</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">seqs_dict</span></div>
+
+<div class="viewcode-block" id="compare_fasta.get_fasta"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.get_fasta">[docs]</a>    <span class="k">def</span> <span class="nf">get_fasta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fasta_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">map_dna</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Read file </span><span class="si">{</span><span class="n">fasta_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">sequences</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">with</span> <span class="n">open_gz_file</span><span class="p">(</span><span class="n">fasta_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">fasta_fh</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">SeqIO</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">fasta_fh</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">):</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">id</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">map_dna</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">map_dna</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                <span class="n">sequences</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[^CGTA]&quot;</span><span class="p">,</span> <span class="s2">&quot;N&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">upper</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="n">sequences</span></div>
+
+<div class="viewcode-block" id="compare_fasta.compare_seqs"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.compare_seqs">[docs]</a>    <span class="k">def</span> <span class="nf">compare_seqs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq1</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">seq2</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+        <span class="n">comp</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">accession</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;accession&quot;</span><span class="p">)</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">seq1</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq2</span><span class="p">))</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;accession&quot;</span><span class="p">:</span> <span class="n">accession</span><span class="p">,</span>
+            <span class="s2">&quot;seq_count_1&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq1</span><span class="p">),</span>
+            <span class="s2">&quot;seq_count_2&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq2</span><span class="p">),</span>
+            <span class="s2">&quot;num_diff_seq&quot;</span><span class="p">:</span> <span class="n">diff</span><span class="p">,</span>
+            <span class="s2">&quot;common&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;only1&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;only2&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;max_only1&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;max_only2&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;only1_200&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;only1_1000&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;only2_200&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;only2_1000&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;other_locations&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;summary&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;organellar_summary&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;Assembly_level_1&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;Assembly_level_2&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;identical&quot;</span>  <span class="c1"># variable used for summary</span>
+        <span class="n">org_value</span> <span class="o">=</span> <span class="s2">&quot;no_organelles_present&quot;</span>  <span class="c1"># variable used for organellar_summary</span>
+
+        <span class="c1"># Compare sequences</span>
+        <span class="n">seqs1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_seq_dict</span><span class="p">(</span><span class="n">seq1</span><span class="p">)</span>
+        <span class="n">seqs2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_seq_dict</span><span class="p">(</span><span class="n">seq2</span><span class="p">)</span>
+
+        <span class="c1"># Compare number of sequences</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq1</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq2</span><span class="p">):</span>
+            <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: Different number of sequences: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">seq1</span><span class="p">)</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">seq2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Same number of sequences: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">seq1</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Sequences that are not common</span>
+        <span class="n">only1</span> <span class="o">=</span> <span class="p">{</span><span class="n">seq</span><span class="p">:</span> <span class="n">group</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">seqs1</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">seqs2</span><span class="p">}</span>
+
+        <span class="n">only2</span> <span class="o">=</span> <span class="p">{</span><span class="n">seq</span><span class="p">:</span> <span class="n">group</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">seqs2</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">seqs1</span><span class="p">}</span>
+
+        <span class="n">common</span><span class="p">,</span> <span class="n">group_comp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_common_groups</span><span class="p">(</span><span class="n">seqs1</span><span class="p">,</span> <span class="n">seqs2</span><span class="p">)</span>
+        <span class="n">comp</span> <span class="o">+=</span> <span class="n">group_comp</span>
+
+        <span class="k">if</span> <span class="n">only1</span> <span class="ow">or</span> <span class="n">only2</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;mismatch&quot;</span>
+
+        <span class="c1"># Gathering the organellar sequences</span>
+        <span class="n">report</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;report&quot;</span><span class="p">)</span>
+        <span class="n">report_parser</span> <span class="o">=</span> <span class="n">SeqregionParser</span><span class="p">()</span>
+        <span class="n">report_seq</span> <span class="o">=</span> <span class="n">report_parser</span><span class="o">.</span><span class="n">get_report_regions</span><span class="p">(</span><span class="n">report</span><span class="p">,</span> <span class="n">accession</span><span class="p">)</span>
+        <span class="n">map_dna_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;seq_regions&quot;</span><span class="p">)</span>
+        <span class="n">seq_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_json</span><span class="p">(</span><span class="n">map_dna_path</span><span class="p">)</span>
+        <span class="n">org_loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">organellar_assembly</span><span class="p">(</span><span class="n">report_seq</span><span class="p">,</span> <span class="n">seq_data</span><span class="p">)</span>
+        <span class="n">INSDC_assembly_level</span><span class="p">,</span> <span class="n">core_assembly_level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">assembly_level</span><span class="p">(</span><span class="n">report_seq</span><span class="p">,</span> <span class="n">seq_data</span><span class="p">)</span>
+
+        <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Assembly level: </span><span class="si">{</span><span class="n">INSDC_assembly_level</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">core_assembly_level</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">names_length</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># sequences which have extra N at the end</span>
+        <span class="k">if</span> <span class="n">only1</span> <span class="ow">and</span> <span class="n">only2</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">seq_1</span><span class="p">,</span> <span class="n">name1</span> <span class="ow">in</span> <span class="n">only1</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">len1</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq_1</span><span class="p">)</span>
+                <span class="n">seq1_N</span> <span class="o">=</span> <span class="n">seq_1</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;N&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">seq_2</span><span class="p">,</span> <span class="n">name2</span> <span class="ow">in</span> <span class="n">only2</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">len2</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq_2</span><span class="p">)</span>
+                    <span class="n">seq2_N</span> <span class="o">=</span> <span class="n">seq_2</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;N&quot;</span><span class="p">)</span>
+                    <span class="n">sequence_2</span> <span class="o">=</span> <span class="n">seq_2</span><span class="p">[:</span><span class="n">len1</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">sequence_2</span> <span class="o">==</span> <span class="n">seq_1</span><span class="p">:</span>
+                        <span class="n">ignored_seq</span> <span class="o">=</span> <span class="n">seq_2</span><span class="p">[</span><span class="n">len1</span><span class="p">:]</span>
+                        <span class="n">N</span> <span class="o">=</span> <span class="n">ignored_seq</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;N&quot;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ignored_seq</span><span class="p">)</span> <span class="o">==</span> <span class="n">N</span><span class="p">:</span>
+                            <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Please check extra Ns added in core in </span><span class="si">{</span><span class="n">name1</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">name2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;ALERT INSERTIONS at the end or diff assembly level </span><span class="si">{</span><span class="n">name1</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">name2</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">len1</span> <span class="o">==</span> <span class="n">len2</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">seq2_N</span> <span class="o">&gt;</span> <span class="n">seq1_N</span><span class="p">:</span>
+                            <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Core has more Ns, check </span><span class="si">{</span><span class="n">name1</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">name2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="k">elif</span> <span class="n">seq1_N</span> <span class="o">&gt;</span> <span class="n">seq2_N</span><span class="p">:</span>
+                            <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;INSDC has more Ns, check </span><span class="si">{</span><span class="n">name1</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">name2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">names_length</span><span class="p">[</span><span class="n">name1</span><span class="p">]</span> <span class="o">=</span> <span class="n">name2</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">names_length</span><span class="p">:</span>
+            <span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">names_length</span><span class="p">)</span>
+            <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">length</span><span class="si">}</span><span class="s2"> sequences have the same length&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">insdc</span><span class="p">,</span> <span class="n">core</span> <span class="ow">in</span> <span class="n">names_length</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;INSDC: </span><span class="si">{</span><span class="n">insdc</span><span class="si">}</span><span class="s2"> and coredb : </span><span class="si">{</span><span class="n">core</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Remove the duplicates</span>
+        <span class="k">for</span> <span class="n">org_name</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">org_loc</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="k">for</span> <span class="n">insdc_id</span><span class="p">,</span> <span class="n">core_id</span> <span class="ow">in</span> <span class="n">common</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">org_name</span> <span class="o">==</span> <span class="n">core_id</span><span class="p">:</span>
+                    <span class="n">org_loc</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">org_name</span><span class="p">)</span>
+
+        <span class="c1"># checking for multiple entries of organellar seq</span>
+        <span class="n">multi_org</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">org_loc</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+        <span class="n">multi_org_acc</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">multi_org</span><span class="p">]</span>  <span class="c1"># similar accession</span>
+        <span class="n">unique_org_id</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">multi_org_acc</span><span class="p">))</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="p">[</span><span class="n">location</span> <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="n">org_loc</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+        <span class="n">unique_location</span> <span class="o">=</span> <span class="n">location</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;mitochondrial_chromosome&quot;</span><span class="p">)</span>
+        <span class="n">unique_apicoplast</span> <span class="o">=</span> <span class="n">location</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;apicoplast_chromosome&quot;</span><span class="p">)</span>
+
+        <span class="n">only1_id</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">id1</span><span class="p">)</span> <span class="k">for</span> <span class="n">id1</span> <span class="ow">in</span> <span class="n">only1</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+
+        <span class="c1"># comparing organellar sequences with common, only1 and only2</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">org_name</span><span class="p">,</span> <span class="n">loc</span> <span class="ow">in</span> <span class="n">org_loc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">org_name</span> <span class="o">==</span> <span class="s2">&quot;na&quot;</span><span class="p">:</span>
+                <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;MISSING accession in the report (na)&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">org_name</span> <span class="ow">in</span> <span class="n">common</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">org_name</span><span class="si">}</span><span class="s2"> (both) in location: </span><span class="si">{</span><span class="n">loc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">org_value</span> <span class="o">=</span> <span class="s2">&quot;identical&quot;</span>
+                <span class="k">elif</span> <span class="n">org_name</span> <span class="ow">in</span> <span class="n">only1_id</span><span class="p">:</span>
+                    <span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">org_name</span><span class="si">}</span><span class="s2"> (only1) in  location: </span><span class="si">{</span><span class="n">loc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">org_value</span> <span class="o">=</span> <span class="s2">&quot;unknown_with_organellar&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">org_name</span><span class="si">}</span><span class="s2"> (only2) in location: </span><span class="si">{</span><span class="n">loc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">org_value</span> <span class="o">=</span> <span class="s2">&quot;unknown_with_organellar&quot;</span>
+
+        <span class="c1"># if the mistmatch is due to added organellar sequences</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seqs1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">seqs2</span><span class="p">):</span>
+            <span class="n">greater_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">greater_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq2</span><span class="p">)</span>
+
+        <span class="n">diff_common</span> <span class="o">=</span> <span class="n">greater_len</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">common</span><span class="p">)</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">only1</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">only2</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">diff</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">diff</span> <span class="o">==</span> <span class="n">count</span> <span class="ow">and</span> <span class="n">diff_common</span> <span class="o">==</span> <span class="n">count</span><span class="p">:</span>
+                <span class="n">org_value</span> <span class="o">=</span> <span class="s2">&quot;organellar_present&quot;</span>
+
+        <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">org_value</span> <span class="o">=</span> <span class="s2">&quot;no_organelles_present&quot;</span>
+
+        <span class="c1"># checking if multiple entries of organellar sequences are present</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">multi_org_acc</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_org_id</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">unique_location</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">unique_apicoplast</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">org_value</span> <span class="o">=</span> <span class="s2">&quot;WARNING:Multiple_entry&quot;</span>
+
+        <span class="c1"># updating the stats</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;num_diff_seq&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diff</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;common&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">common</span><span class="p">)</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;only1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">only1</span><span class="p">)</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;only2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">only2</span><span class="p">)</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;other_locations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;summary&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;organellar_summary&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">org_value</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;Assembly_level_1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">INSDC_assembly_level</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;Assembly_level_2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">core_assembly_level</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">only1</span><span class="p">:</span>
+            <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;max_only1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">only1</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)))</span>
+            <span class="c1"># Only list sequences where the length is &gt; 200</span>
+            <span class="n">mini</span> <span class="o">=</span> <span class="p">{</span><span class="n">seq</span><span class="p">:</span> <span class="n">name</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">only1</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">200</span><span class="p">}</span>
+            <span class="n">maxi</span> <span class="o">=</span> <span class="p">{</span><span class="n">seq</span><span class="p">:</span> <span class="n">name</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">only1</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">200</span><span class="p">}</span>
+
+            <span class="k">if</span> <span class="n">mini</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">mini</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3000</span><span class="p">:</span>
+                <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: Ignoring </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mini</span><span class="p">)</span><span class="si">}</span><span class="s2"> sequences from 1 with length &lt;= 200&quot;</span><span class="p">)</span>
+                <span class="n">only1</span> <span class="o">=</span> <span class="n">maxi</span>
+
+        <span class="k">if</span> <span class="n">only1</span><span class="p">:</span>
+            <span class="c1"># Only list sequences where the length is &gt; 1000</span>
+            <span class="n">mini</span> <span class="o">=</span> <span class="p">{</span><span class="n">seq</span><span class="p">:</span> <span class="n">name</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">only1</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1000</span><span class="p">}</span>
+            <span class="n">maxi</span> <span class="o">=</span> <span class="p">{</span><span class="n">seq</span><span class="p">:</span> <span class="n">name</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">only1</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">}</span>
+            <span class="k">if</span> <span class="n">mini</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">mini</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3000</span><span class="p">:</span>
+                <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: Ignoring </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mini</span><span class="p">)</span><span class="si">}</span><span class="s2"> sequences from 1 with length &lt;= 1000&quot;</span><span class="p">)</span>
+                <span class="n">only1</span> <span class="o">=</span> <span class="n">maxi</span>
+
+        <span class="k">if</span> <span class="n">only1</span><span class="p">:</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">only1</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+            <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: Sequences only in 1: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">only1</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+            <span class="n">only_seq1</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">only1</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">length</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">only_seq1</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Only in 1: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">length</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">only2</span><span class="p">:</span>
+            <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;max_only2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">only2</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)))</span>
+            <span class="c1"># Only list sequences where the length is &gt; 200</span>
+            <span class="n">mini</span> <span class="o">=</span> <span class="p">{</span><span class="n">seq</span><span class="p">:</span> <span class="n">name</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">only2</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">200</span><span class="p">}</span>
+            <span class="n">maxi</span> <span class="o">=</span> <span class="p">{</span><span class="n">seq</span><span class="p">:</span> <span class="n">name</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">only2</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">200</span><span class="p">}</span>
+
+            <span class="k">if</span> <span class="n">mini</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">mini</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3000</span><span class="p">:</span>
+                <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: Ignoring </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mini</span><span class="p">)</span><span class="si">}</span><span class="s2"> sequences from 2 with length &lt;= 200&quot;</span><span class="p">)</span>
+                <span class="n">only2</span> <span class="o">=</span> <span class="n">maxi</span>
+
+        <span class="k">if</span> <span class="n">only2</span><span class="p">:</span>
+            <span class="c1"># Only list sequences where the length is &gt; 1000</span>
+            <span class="n">mini</span> <span class="o">=</span> <span class="p">{</span><span class="n">seq</span><span class="p">:</span> <span class="n">name</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">only2</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1000</span><span class="p">}</span>
+            <span class="n">maxi</span> <span class="o">=</span> <span class="p">{</span><span class="n">seq</span><span class="p">:</span> <span class="n">name</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">only2</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">}</span>
+
+            <span class="k">if</span> <span class="n">mini</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">mini</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3000</span><span class="p">:</span>
+                <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: Ignoring </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mini</span><span class="p">)</span><span class="si">}</span><span class="s2"> sequences from 2 with length &lt;= 1000&quot;</span><span class="p">)</span>
+                <span class="n">only2</span> <span class="o">=</span> <span class="n">maxi</span>
+
+        <span class="k">if</span> <span class="n">only2</span><span class="p">:</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">only2</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+            <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: Sequences only in 2: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">only2</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+            <span class="n">only_seq2</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="k">for</span> <span class="n">seq</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">only2</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">length</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">only_seq2</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Only in 2: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">length</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">stats</span><span class="p">,</span> <span class="n">comp</span><span class="p">,</span> <span class="n">common</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="compare_fasta.find_common_groups"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.find_common_groups">[docs]</a>    <span class="k">def</span> <span class="nf">find_common_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seqs1</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">seqs2</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">seqs1</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">seqs2</span><span class="p">))</span>
+        <span class="n">comp</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">common</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">seq1</span><span class="p">,</span> <span class="n">group1</span> <span class="ow">in</span> <span class="n">seqs1</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">seq1</span> <span class="ow">in</span> <span class="n">seqs2</span><span class="p">:</span>
+                <span class="n">group2</span> <span class="o">=</span> <span class="n">seqs2</span><span class="p">[</span><span class="n">seq1</span><span class="p">]</span>
+                <span class="c1"># Check that the 2 groups have the same number of sequences</span>
+                <span class="k">if</span> <span class="n">group1</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="n">group2</span><span class="o">.</span><span class="n">count</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">group1</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">common</span><span class="p">[</span><span class="n">group1</span><span class="o">.</span><span class="n">ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">group2</span><span class="o">.</span><span class="n">ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Matched 2 identical groups of sequences: </span><span class="si">{</span><span class="n">group1</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">group2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="n">possible_id2</span> <span class="o">=</span> <span class="s2">&quot; OR &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">group2</span><span class="o">.</span><span class="n">ids</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">id1</span> <span class="ow">in</span> <span class="n">group1</span><span class="o">.</span><span class="n">ids</span><span class="p">:</span>
+                            <span class="n">common</span><span class="p">[</span><span class="n">id1</span><span class="p">]</span> <span class="o">=</span> <span class="n">possible_id2</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">comp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Matched 2 different groups of sequences (</span><span class="si">{</span><span class="n">group1</span><span class="o">.</span><span class="n">count</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">group2</span><span class="o">.</span><span class="n">count</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">group1</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">group2</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">common</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">common</span><span class="p">,</span> <span class="n">comp</span></div>
+
+<div class="viewcode-block" id="compare_fasta.organellar_assembly"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.organellar_assembly">[docs]</a>    <span class="k">def</span> <span class="nf">organellar_assembly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report_seq</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">org_loc</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Gathering data from the INSDC report file and storing it into a list</span>
+        <span class="k">for</span> <span class="n">name1</span><span class="p">,</span> <span class="n">details1</span> <span class="ow">in</span> <span class="n">report_seq</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="s2">&quot;location&quot;</span> <span class="ow">in</span> <span class="n">details1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">details1</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span>
+                    <span class="s2">&quot;chromosome&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;nuclear_chromosome&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;linkage_group&quot;</span><span class="p">,</span>
+                <span class="p">):</span>
+                    <span class="n">loc</span> <span class="o">=</span> <span class="n">details1</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span>
+                    <span class="n">org_loc</span><span class="p">[</span><span class="n">name1</span><span class="p">]</span> <span class="o">=</span> <span class="n">loc</span>
+
+        <span class="c1"># Gathering data from Seq_json file and storing it into a list</span>
+        <span class="k">for</span> <span class="n">rep</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name2</span><span class="p">,</span> <span class="n">details2</span> <span class="ow">in</span> <span class="n">rep</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="s2">&quot;location&quot;</span> <span class="ow">in</span> <span class="n">name2</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">details2</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span>
+                        <span class="s2">&quot;chromosome&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;nuclear_chromosome&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;linkage_group&quot;</span><span class="p">,</span>
+                    <span class="p">):</span>
+                        <span class="n">name</span> <span class="o">=</span> <span class="n">rep</span><span class="p">[</span><span class="s2">&quot;BRC4_seq_region_name&quot;</span><span class="p">]</span>
+                        <span class="n">org_loc</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">details2</span>
+
+        <span class="k">return</span> <span class="n">org_loc</span></div>
+
+<div class="viewcode-block" id="compare_fasta.assembly_level"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.compare_fasta.compare_fasta.assembly_level">[docs]</a>    <span class="k">def</span> <span class="nf">assembly_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report_seq</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">core_data</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="n">INSDC_assembly_level</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">core_assembly_level</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">core_assembly</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">scaffold_INSDC</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">chromosome_INSDC</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">scaffold_core</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">chromosome_core</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">insdc_rep</span> <span class="ow">in</span> <span class="n">report_seq</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">insdc_rep</span><span class="p">[</span><span class="s2">&quot;coord_system_level&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span>
+                <span class="s2">&quot;chromosome&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;nuclear_chromosome&quot;</span><span class="p">,</span>
+            <span class="p">):</span>
+                <span class="n">scaffold_INSDC</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">chromosome_INSDC</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">INSDC_assembly_level</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">scaffold_INSDC</span><span class="p">,</span> <span class="n">chromosome_INSDC</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">core_details</span> <span class="ow">in</span> <span class="n">core_data</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">core_details</span><span class="p">[</span><span class="s2">&quot;BRC4_seq_region_name&quot;</span><span class="p">]</span>
+            <span class="n">coord_system_level</span> <span class="o">=</span> <span class="n">core_details</span><span class="p">[</span><span class="s2">&quot;coord_system_level&quot;</span><span class="p">]</span>
+            <span class="n">core_assembly</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">coord_system_level</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">coord_level</span> <span class="ow">in</span> <span class="n">core_assembly</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">coord_level</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;chromosome&quot;</span><span class="p">,</span> <span class="s2">&quot;nuclear_chromosome&quot;</span><span class="p">):</span>
+                <span class="n">scaffold_core</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">chromosome_core</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">core_assembly_level</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">scaffold_core</span><span class="p">,</span> <span class="n">chromosome_core</span><span class="p">])</span>
+
+        <span class="n">INSDC_assembly_level</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">assembly</span><span class="p">)</span> <span class="k">for</span> <span class="n">assembly</span> <span class="ow">in</span> <span class="n">INSDC_assembly_level</span><span class="p">])</span>
+        <span class="n">core_assembly_level</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">assembly</span><span class="p">)</span> <span class="k">for</span> <span class="n">assembly</span> <span class="ow">in</span> <span class="n">core_assembly_level</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">INSDC_assembly_level</span><span class="p">,</span> <span class="n">core_assembly_level</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

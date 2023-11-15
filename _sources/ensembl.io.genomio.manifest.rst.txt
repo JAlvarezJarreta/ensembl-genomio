@@ -1,0 +1,34 @@
+ensembl.io.genomio.manifest package
+===================================
+
+.. automodule:: ensembl.io.genomio.manifest
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.io.genomio.manifest.check\_integrity module
+---------------------------------------------------
+
+.. automodule:: ensembl.io.genomio.manifest.check_integrity
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.manifest.compute\_stats module
+-------------------------------------------------
+
+.. automodule:: ensembl.io.genomio.manifest.compute_stats
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.manifest.generate module
+-------------------------------------------
+
+.. automodule:: ensembl.io.genomio.manifest.generate
+   :members:
+   :undoc-members:
+   :show-inheritance:

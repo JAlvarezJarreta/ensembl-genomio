@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.brc4.runnable.integrity &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.brc4.runnable.integrity</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!env python3</span>
+<span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">floor</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">BCBio</span> <span class="kn">import</span> <span class="n">GFF</span>
+<span class="kn">from</span> <span class="nn">Bio</span> <span class="kn">import</span> <span class="n">SeqIO</span>
+<span class="kn">import</span> <span class="nn">eHive</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.io.genomio.utils.json_utils</span> <span class="kn">import</span> <span class="n">get_json</span>
+
+
+<div class="viewcode-block" id="integrity"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity">[docs]</a><span class="k">class</span> <span class="nc">integrity</span><span class="p">(</span><span class="n">eHive</span><span class="o">.</span><span class="n">BaseRunnable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check the integrity of sequence and annotation files in the genome&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="integrity.param_defaults"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity.param_defaults">[docs]</a>    <span class="k">def</span> <span class="nf">param_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;ensembl_mode&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;ignore_final_stops&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="integrity.run"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load files listed in the manifest.json and check the integrity.</span>
+<span class="sd">            Check if the files are correct by verifying the MD5 hash.</span>
+<span class="sd">            Check if translation, functional annotation and sequence region ids</span>
+<span class="sd">            and lengths are consistent with the information in gff.</span>
+<span class="sd">            Compare sequence length from fasta_dna file to seq_region.json metadata.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            manifest: Path to the manifest file.</span>
+<span class="sd">            It contains a set of files fasta, json metadata</span>
+<span class="sd">            and optional annotation files (gff, functional_annotation).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Error if any of the above checks fail.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">manifest_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;manifest&quot;</span><span class="p">)</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># load the manisfest.json</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">manifest_file</span><span class="p">:</span>
+            <span class="n">manifest</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">manifest_file</span><span class="p">)</span>
+
+            <span class="c1"># Use dir name from the manifest</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;file&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+                    <span class="n">file_name</span> <span class="o">=</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">&quot;file&quot;</span><span class="p">]</span>
+                    <span class="n">file_name</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">),</span> <span class="n">file_name</span><span class="p">)</span>
+                    <span class="c1"># check if the md5sum is correct</span>
+                    <span class="n">md5sum</span> <span class="o">=</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">&quot;md5sum&quot;</span><span class="p">]</span>
+                    <span class="n">errors</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_md5sum</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">md5sum</span><span class="p">)</span>
+
+                    <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">file_name</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+                        <span class="k">if</span> <span class="s2">&quot;file&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">f</span><span class="p">]:</span>
+                            <span class="n">file_name</span> <span class="o">=</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">f</span><span class="p">][</span><span class="s2">&quot;file&quot;</span><span class="p">]</span>
+                            <span class="n">file_name</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">),</span> <span class="n">file_name</span><span class="p">)</span>
+                            <span class="c1"># check if the md5sum is correct</span>
+                            <span class="n">md5sum</span> <span class="o">=</span> <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">f</span><span class="p">][</span><span class="s2">&quot;md5sum&quot;</span><span class="p">]</span>
+                            <span class="n">errors</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_md5sum</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">md5sum</span><span class="p">)</span>
+
+                            <span class="n">manifest</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">file_name</span>
+
+            <span class="c1"># Get content from the manifest file and store it into following variables</span>
+            <span class="n">dna</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">pep</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">seq_regions</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">seq_lengths</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">seq_circular</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">gff</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">func_ann</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">agp_seqr</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">genome</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">if</span> <span class="s2">&quot;gff3&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got a gff&quot;</span><span class="p">)</span>
+                <span class="n">gff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_gff3</span><span class="p">(</span><span class="n">manifest</span><span class="p">[</span><span class="s2">&quot;gff3&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="s2">&quot;fasta_dna&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got a fasta dna&quot;</span><span class="p">)</span>
+                <span class="c1"># Verify if the length and id for the sequence is unique</span>
+                <span class="n">dna</span><span class="p">,</span> <span class="n">dna_errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fasta_lengths</span><span class="p">(</span><span class="n">manifest</span><span class="p">[</span><span class="s2">&quot;fasta_dna&quot;</span><span class="p">])</span>
+                <span class="n">errors</span> <span class="o">+=</span> <span class="n">dna_errors</span>
+            <span class="k">if</span> <span class="s2">&quot;fasta_pep&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got a fasta pep&quot;</span><span class="p">)</span>
+                <span class="n">ignore_final_stops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;ignore_final_stops&quot;</span><span class="p">)</span>
+                <span class="c1"># Verify if the length and id for the sequence is unique</span>
+                <span class="n">pep</span><span class="p">,</span> <span class="n">pep_errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fasta_lengths</span><span class="p">(</span>
+                    <span class="n">manifest</span><span class="p">[</span><span class="s2">&quot;fasta_pep&quot;</span><span class="p">],</span> <span class="n">ignore_final_stops</span><span class="o">=</span><span class="n">ignore_final_stops</span>
+                <span class="p">)</span>
+                <span class="n">errors</span> <span class="o">+=</span> <span class="n">pep_errors</span>
+            <span class="k">if</span> <span class="s2">&quot;seq_region&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got a seq_regions&quot;</span><span class="p">)</span>
+                <span class="n">seq_regions</span> <span class="o">=</span> <span class="n">get_json</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">manifest</span><span class="p">[</span><span class="s2">&quot;seq_region&quot;</span><span class="p">]))</span>
+                <span class="n">seqr_lengths</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">seqr_seqlevel</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="c1"># Store the length as int</span>
+                <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">seq_regions</span><span class="p">:</span>
+                    <span class="n">seq_lengths</span><span class="p">[</span><span class="n">seq</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">seq</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">])</span>
+                    <span class="n">seq_circular</span><span class="p">[</span><span class="n">seq</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">seq</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;circular&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">seq</span><span class="p">[</span><span class="s2">&quot;coord_system_level&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;contig&quot;</span><span class="p">:</span>
+                        <span class="n">seqr_seqlevel</span><span class="p">[</span><span class="n">seq</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">seq</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="s2">&quot;functional_annotation&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got a func_anns&quot;</span><span class="p">)</span>
+                <span class="n">func_ann</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_functional_annotation</span><span class="p">(</span><span class="n">manifest</span><span class="p">[</span><span class="s2">&quot;functional_annotation&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="s2">&quot;agp&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got agp files&quot;</span><span class="p">)</span>
+                <span class="n">agp_seqr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_agp_seq_regions</span><span class="p">(</span><span class="n">manifest</span><span class="p">[</span><span class="s2">&quot;agp&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="s2">&quot;genome&quot;</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got a genome&quot;</span><span class="p">)</span>
+                <span class="n">genome</span> <span class="o">=</span> <span class="n">get_json</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">manifest</span><span class="p">[</span><span class="s2">&quot;genome&quot;</span><span class="p">]))</span>
+
+            <span class="c1"># Check if the accession is correct in genome.json</span>
+            <span class="k">if</span> <span class="n">genome</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;assembly&quot;</span> <span class="ow">in</span> <span class="n">genome</span><span class="p">:</span>
+                    <span class="n">genome_ass</span> <span class="o">=</span> <span class="n">genome</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="s2">&quot;accession&quot;</span> <span class="ow">in</span> <span class="n">genome_ass</span><span class="p">:</span>
+                        <span class="n">genome_acc</span> <span class="o">=</span> <span class="n">genome_ass</span><span class="p">[</span><span class="s2">&quot;accession&quot;</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s2">&quot;GC[AF]_\d</span><span class="si">{9}</span><span class="s2">(\.\d+)?&quot;</span><span class="p">,</span> <span class="n">genome_acc</span><span class="p">):</span>
+                            <span class="n">errors</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;Genome assembly accession is wrong: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">genome_acc</span><span class="p">]</span>
+
+            <span class="c1"># Check gff3</span>
+            <span class="k">if</span> <span class="n">gff</span><span class="p">:</span>
+                <span class="c1"># Check fasta_pep.fa integrity</span>
+                <span class="c1"># The sequence length and id retrieved from the fasta_pep file and compared to the translated CDS id and length in the gff</span>
+                <span class="c1"># We don&#39;t compare the peptide lengths because of seqedits</span>
+                <span class="k">if</span> <span class="n">pep</span><span class="p">:</span>
+                    <span class="n">tr_errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_lengths</span><span class="p">(</span>
+                        <span class="n">pep</span><span class="p">,</span> <span class="n">gff</span><span class="p">[</span><span class="s2">&quot;translations&quot;</span><span class="p">],</span> <span class="s2">&quot;Fasta translations vs gff&quot;</span><span class="p">,</span> <span class="n">special_diff</span><span class="o">=</span><span class="kc">True</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr_errors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="c1"># The pseudo CDSs are included in this check</span>
+                        <span class="c1"># Pseudo CDSs are not translated, if the pseudo translation ids are not ignored in the gff it will give an error</span>
+                        <span class="n">tr_errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_lengths</span><span class="p">(</span>
+                            <span class="n">pep</span><span class="p">,</span>
+                            <span class="n">gff</span><span class="p">[</span><span class="s2">&quot;all_translations&quot;</span><span class="p">],</span>
+                            <span class="s2">&quot;Fasta translations vs gff (include pseudo CDS)&quot;</span><span class="p">,</span>
+                            <span class="n">special_diff</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">errors</span> <span class="o">+=</span> <span class="n">tr_errors</span>
+
+                <span class="c1"># Check functional_annotation.json integrity</span>
+                <span class="c1"># Gene ids, translated CDS ids and translated CDSs including pseudogenes are compared to the gff</span>
+                <span class="k">if</span> <span class="n">func_ann</span><span class="p">:</span>
+                    <span class="n">errors</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_ids</span><span class="p">(</span><span class="n">func_ann</span><span class="p">[</span><span class="s2">&quot;genes&quot;</span><span class="p">],</span> <span class="n">gff</span><span class="p">[</span><span class="s2">&quot;genes&quot;</span><span class="p">],</span> <span class="s2">&quot;Gene ids metadata vs gff&quot;</span><span class="p">)</span>
+                    <span class="n">tr_errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_ids</span><span class="p">(</span>
+                        <span class="n">func_ann</span><span class="p">[</span><span class="s2">&quot;translations&quot;</span><span class="p">],</span> <span class="n">gff</span><span class="p">[</span><span class="s2">&quot;translations&quot;</span><span class="p">],</span> <span class="s2">&quot;Translation ids metadata vs gff&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr_errors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">tr_errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_ids</span><span class="p">(</span>
+                            <span class="n">func_ann</span><span class="p">[</span><span class="s2">&quot;translations&quot;</span><span class="p">],</span>
+                            <span class="n">gff</span><span class="p">[</span><span class="s2">&quot;all_translations&quot;</span><span class="p">],</span>
+                            <span class="s2">&quot;Translation ids metadata vs gff (include pseudo CDS)&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="n">errors</span> <span class="o">+=</span> <span class="n">tr_errors</span>
+                    <span class="n">errors</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_ids</span><span class="p">(</span>
+                        <span class="n">func_ann</span><span class="p">[</span><span class="s2">&quot;transposable_elements&quot;</span><span class="p">],</span>
+                        <span class="n">gff</span><span class="p">[</span><span class="s2">&quot;transposable_elements&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;TE ids metadata vs gff&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="c1"># Check the seq.json intregrity</span>
+                <span class="c1"># Compare the length and id retrieved from seq.json to the gff</span>
+                <span class="k">if</span> <span class="n">seq_regions</span><span class="p">:</span>
+                    <span class="n">errors</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_seq_region_lengths</span><span class="p">(</span>
+                        <span class="n">seq_lengths</span><span class="p">,</span> <span class="n">gff</span><span class="p">[</span><span class="s2">&quot;seq_region&quot;</span><span class="p">],</span> <span class="s2">&quot;Seq_regions metadata vs gff&quot;</span><span class="p">,</span> <span class="n">seq_circular</span>
+                    <span class="p">)</span>
+
+            <span class="c1"># Check fasta dna and seq_region integrity</span>
+            <span class="k">if</span> <span class="n">dna</span> <span class="ow">and</span> <span class="n">seq_regions</span><span class="p">:</span>
+                <span class="n">errors</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_seq_region_lengths</span><span class="p">(</span><span class="n">seq_lengths</span><span class="p">,</span> <span class="n">dna</span><span class="p">,</span> <span class="s2">&quot;seq_regions json vs dna&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Check agp and seq_region integrity</span>
+            <span class="k">if</span> <span class="n">agp_seqr</span> <span class="ow">and</span> <span class="n">seq_lengths</span><span class="p">:</span>
+                <span class="n">errors</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_seq_region_lengths</span><span class="p">(</span><span class="n">seq_lengths</span><span class="p">,</span> <span class="n">agp_seqr</span><span class="p">,</span> <span class="s2">&quot;seq_regions json vs agps&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+            <span class="n">errors_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Integrity test failed for </span><span class="si">%s</span><span class="s2">:</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">manifest_path</span><span class="p">,</span> <span class="n">errors_str</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="integrity.check_md5sum"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity.check_md5sum">[docs]</a>    <span class="k">def</span> <span class="nf">check_md5sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">md5sum</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verify the integrity of the files in manifest.json.</span>
+
+<span class="sd">            An MD5 hash is generated using the path provided which is then compared to the hash</span>
+<span class="sd">            in manifest.json.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            Path: The path for each file in the genome.</span>
+<span class="sd">            md5sum: MD5 hash for the files.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Error if the md5sum does not match.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="nb">bytes</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="n">readable_hash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="nb">bytes</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">readable_hash</span> <span class="o">!=</span> <span class="n">md5sum</span><span class="p">:</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> has a wrong md5sum&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">errors</span></div>
+
+<div class="viewcode-block" id="integrity.get_fasta_lengths"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity.get_fasta_lengths">[docs]</a>    <span class="k">def</span> <span class="nf">get_fasta_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fasta_path</span><span class="p">,</span> <span class="n">ignore_final_stops</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the fasta files have the correct ids and no stop codon.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            fasta_path: Path to fasta_dna and fasta_pep files.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Error if any empty ids, non-unique ids or stop codons are found in the fasta files.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">non_unique</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">non_unique_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">empty_id_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">contains_stop_codon</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">SeqIO</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">fasta_path</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">):</span>
+            <span class="c1"># Flag empty ids</span>
+            <span class="k">if</span> <span class="n">rec</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="n">empty_id_count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Flag redundant ids</span>
+                <span class="k">if</span> <span class="n">rec</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                    <span class="n">non_unique</span><span class="p">[</span><span class="n">rec</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">non_unique_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="c1"># Store sequence id and length</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">rec</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+                <span class="n">stops</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">stops</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">contains_stop_codon</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">stops</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">rec</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ignore_final_stops</span><span class="p">:</span>
+                        <span class="n">contains_stop_codon</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">empty_id_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> sequences with empty ids in </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">empty_id_count</span><span class="p">,</span> <span class="n">fasta_path</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">non_unique_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> non unique sequence ids in </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">non_unique_count</span><span class="p">,</span> <span class="n">fasta_path</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">contains_stop_codon</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> sequences with stop codons in </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">contains_stop_codon</span><span class="p">,</span> <span class="n">fasta_path</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">errors</span></div>
+
+<div class="viewcode-block" id="integrity.get_functional_annotation"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity.get_functional_annotation">[docs]</a>    <span class="k">def</span> <span class="nf">get_functional_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the functional annotation file to retrieve the gene_id and translation id.</span>
+<span class="sd">            A functional annotation file contains information about a gene.</span>
+<span class="sd">            The functional annotation file is stored in a json format containing</span>
+<span class="sd">            the description, id and object type (eg: &quot;gene&quot;, &quot;transcript&quot;, &quot;translation&quot;).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            json_path: Path to functional_annotation.json.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict with gene and translation ids.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Load the json file</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">json_file</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">json_file</span><span class="p">)</span>
+
+            <span class="c1"># Get gene ids and translation ids</span>
+            <span class="n">genes</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">translations</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">tes</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s2">&quot;object_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;gene&quot;</span><span class="p">:</span>
+                    <span class="n">genes</span><span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">item</span><span class="p">[</span><span class="s2">&quot;object_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;translation&quot;</span><span class="p">:</span>
+                    <span class="n">translations</span><span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s2">&quot;object_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;transposable_element&quot;</span><span class="p">:</span>
+                    <span class="n">tes</span><span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;genes&quot;</span><span class="p">:</span> <span class="n">genes</span><span class="p">,</span> <span class="s2">&quot;translations&quot;</span><span class="p">:</span> <span class="n">translations</span><span class="p">,</span> <span class="s2">&quot;transposable_elements&quot;</span><span class="p">:</span> <span class="n">tes</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="integrity.get_gff3"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity.get_gff3">[docs]</a>    <span class="k">def</span> <span class="nf">get_gff3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gff3_path</span><span class="p">):</span>
+        <span class="c1"># Load the gff file</span>
+        <span class="k">if</span> <span class="n">gff3_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.gz&quot;</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">io</span><span class="o">.</span><span class="n">TextIOWrapper</span><span class="p">(</span><span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">gff3_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">))</span> <span class="k">as</span> <span class="n">gff3_handle</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_gff3</span><span class="p">(</span><span class="n">gff3_handle</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">gff3_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">gff3_handle</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_gff3</span><span class="p">(</span><span class="n">gff3_handle</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="integrity.parse_gff3"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity.parse_gff3">[docs]</a>    <span class="k">def</span> <span class="nf">parse_gff3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gff3_handle</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A GFF parser is used to retrieve information in the GFF file such as</span>
+<span class="sd">           gene and CDS ids and their corresponding lengths.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            gff3_handle: Path to gff3 file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict containing sequence ids, gene ids, transcript ids and translation ids</span>
+<span class="sd">            are stored with their corresponding lengths.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ensembl_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;ensembl_mode&quot;</span><span class="p">)</span>
+        <span class="n">seqs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">genes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">peps</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">all_peps</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">tes</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">gff</span> <span class="o">=</span> <span class="n">GFF</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">gff3_handle</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">gff</span><span class="p">:</span>
+            <span class="n">seqs</span><span class="p">[</span><span class="n">seq</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">feat</span> <span class="ow">in</span> <span class="n">seq</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+                <span class="n">feat_length</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">feat</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">end</span> <span class="o">-</span> <span class="n">feat</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+                <span class="c1"># Store gene id and length</span>
+                <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;gene&quot;</span><span class="p">,</span> <span class="s2">&quot;ncRNA_gene&quot;</span><span class="p">,</span> <span class="s2">&quot;pseudogene&quot;</span><span class="p">]:</span>
+                    <span class="n">gene_id</span> <span class="o">=</span> <span class="n">feat</span><span class="o">.</span><span class="n">id</span>
+                    <span class="k">if</span> <span class="n">ensembl_mode</span><span class="p">:</span>
+                        <span class="n">gene_id</span> <span class="o">=</span> <span class="n">feat_length</span>
+                    <span class="n">genes</span><span class="p">[</span><span class="n">gene_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">feat</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">end</span> <span class="o">-</span> <span class="n">feat</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+                    <span class="c1"># Get CDS id and length</span>
+                    <span class="k">for</span> <span class="n">feat2</span> <span class="ow">in</span> <span class="n">feat</span><span class="o">.</span><span class="n">sub_features</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">feat2</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;mRNA&quot;</span><span class="p">,</span> <span class="s2">&quot;pseudogenic_transcript&quot;</span><span class="p">):</span>
+                            <span class="n">length</span> <span class="o">=</span> <span class="p">{}</span>
+                            <span class="k">for</span> <span class="n">feat3</span> <span class="ow">in</span> <span class="n">feat2</span><span class="o">.</span><span class="n">sub_features</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="n">feat3</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;CDS&quot;</span><span class="p">:</span>
+                                    <span class="n">pep_id</span> <span class="o">=</span> <span class="n">feat3</span><span class="o">.</span><span class="n">id</span>
+                                    <span class="k">if</span> <span class="n">ensembl_mode</span><span class="p">:</span>
+                                        <span class="n">pep_id</span> <span class="o">=</span> <span class="n">pep_id</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;CDS:&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                                    <span class="k">if</span> <span class="n">pep_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">length</span><span class="p">:</span>
+                                        <span class="n">length</span><span class="p">[</span><span class="n">pep_id</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                                    <span class="n">length</span><span class="p">[</span><span class="n">pep_id</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">feat3</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">end</span> <span class="o">-</span> <span class="n">feat3</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">pep_id</span> <span class="ow">in</span> <span class="n">length</span><span class="p">:</span>
+                                <span class="c1"># Store length for translations, add pseudo translations separately</span>
+                                <span class="n">pep_length</span> <span class="o">=</span> <span class="n">floor</span><span class="p">(</span><span class="n">length</span><span class="p">[</span><span class="n">pep_id</span><span class="p">]</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                                <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="s2">&quot;pseudogene&quot;</span><span class="p">:</span>
+                                    <span class="n">peps</span><span class="p">[</span><span class="n">pep_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">pep_length</span>
+                                <span class="n">all_peps</span><span class="p">[</span><span class="n">pep_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">pep_length</span>
+                <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;transposable_element&quot;</span><span class="p">:</span>
+                    <span class="n">tes</span><span class="p">[</span><span class="n">feat</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">feat_length</span>
+
+        <span class="n">stats</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;seq_region&quot;</span><span class="p">:</span> <span class="n">seqs</span><span class="p">,</span>
+            <span class="s2">&quot;genes&quot;</span><span class="p">:</span> <span class="n">genes</span><span class="p">,</span>
+            <span class="s2">&quot;translations&quot;</span><span class="p">:</span> <span class="n">peps</span><span class="p">,</span>
+            <span class="s2">&quot;all_translations&quot;</span><span class="p">:</span> <span class="n">all_peps</span><span class="p">,</span>
+            <span class="s2">&quot;transposable_elements&quot;</span><span class="p">:</span> <span class="n">tes</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">stats</span></div>
+
+<div class="viewcode-block" id="integrity.get_agp_seq_regions"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity.get_agp_seq_regions">[docs]</a>    <span class="k">def</span> <span class="nf">get_agp_seq_regions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agp_dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;AGP files describe the assembly of larger sequence objects using smaller objects.</span>
+<span class="sd">            Eg: describes the assembly of scaffolds from contigs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agp_dict: dict containing the information about the sequence.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            AGP file is only used in the older builds, not used for current processing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">seqr</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">agp</span> <span class="ow">in</span> <span class="n">agp_dict</span><span class="p">:</span>
+            <span class="n">agp_path</span> <span class="o">=</span> <span class="n">agp_dict</span><span class="p">[</span><span class="n">agp</span><span class="p">]</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">agp_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">agph</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">agph</span><span class="p">:</span>
+                    <span class="p">(</span>
+                        <span class="n">asm_id</span><span class="p">,</span>
+                        <span class="n">asm_start</span><span class="p">,</span>
+                        <span class="n">asm_end</span><span class="p">,</span>
+                        <span class="n">asm_part</span><span class="p">,</span>
+                        <span class="n">typ</span><span class="p">,</span>
+                        <span class="n">cmp_id</span><span class="p">,</span>
+                        <span class="n">cmp_start</span><span class="p">,</span>
+                        <span class="n">cmp_end</span><span class="p">,</span>
+                        <span class="n">cmp_strand</span><span class="p">,</span>
+                    <span class="p">)</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="c1"># Ignore WGS contig</span>
+                    <span class="k">if</span> <span class="n">typ</span> <span class="o">!=</span> <span class="s2">&quot;W&quot;</span><span class="p">:</span>
+                        <span class="k">continue</span>
+
+                    <span class="c1"># Assembled seq length</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">asm_id</span> <span class="ow">in</span> <span class="n">seqr</span> <span class="ow">or</span> <span class="n">seqr</span><span class="p">[</span><span class="n">asm_id</span><span class="p">]</span> <span class="o">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">asm_end</span><span class="p">):</span>
+                        <span class="n">seqr</span><span class="p">[</span><span class="n">asm_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">asm_end</span><span class="p">)</span>
+
+                    <span class="c1"># Composite seq length</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">cmp_id</span> <span class="ow">in</span> <span class="n">seqr</span> <span class="ow">or</span> <span class="n">seqr</span><span class="p">[</span><span class="n">cmp_id</span><span class="p">]</span> <span class="o">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">cmp_end</span><span class="p">):</span>
+                        <span class="n">seqr</span><span class="p">[</span><span class="n">cmp_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cmp_end</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">seqr</span></div>
+
+<div class="viewcode-block" id="integrity.check_ids"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity.check_ids">[docs]</a>    <span class="k">def</span> <span class="nf">check_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">list1</span><span class="p">,</span> <span class="n">list2</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compare the ids in list1 and list2.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            list1: dict containing sequence ids retrieved from functional.json.</span>
+<span class="sd">            list2: dict containing length and id in the retrieved from the gff.</span>
+<span class="sd">            name:  string</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            Error if the ids in functional.json and gff do not match.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">only1</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">only2</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">common</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">item_id</span> <span class="ow">in</span> <span class="n">list1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">item_id</span> <span class="ow">in</span> <span class="n">list2</span><span class="p">:</span>
+                <span class="n">common</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item_id</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">only1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item_id</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">item_id</span> <span class="ow">in</span> <span class="n">list2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">item_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">common</span><span class="p">:</span>
+                <span class="n">only2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item_id</span><span class="p">)</span>
+
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">common</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> common elements in </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">common</span><span class="p">),</span> <span class="n">name</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">only1</span><span class="p">:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> only in first list in </span><span class="si">%s</span><span class="s2"> (first: </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">only1</span><span class="p">),</span> <span class="n">name</span><span class="p">,</span> <span class="n">only1</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">only2</span><span class="p">:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> only in second list in </span><span class="si">%s</span><span class="s2"> (first: </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">only2</span><span class="p">),</span> <span class="n">name</span><span class="p">,</span> <span class="n">only2</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="n">errors</span></div>
+
+<div class="viewcode-block" id="integrity.check_lengths"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity.check_lengths">[docs]</a>    <span class="k">def</span> <span class="nf">check_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">list1</span><span class="p">,</span> <span class="n">list2</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">allowed_len_diff</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">special_diff</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the difference in ids and length between list1 and list2.</span>
+<span class="sd">            There are a few special cases here where we allow a certain asymmetry</span>
+<span class="sd">            by changing the values of the arguments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            list1: dict containing length and id of the sequence from fasta files.</span>
+<span class="sd">            list2: dict containing length and id in the retrieved from the gff.</span>
+<span class="sd">            name:  string</span>
+
+<span class="sd">        allowed_len_diff : set as None when we do not want to accept any difference in length between list1 and list2.</span>
+<span class="sd">            The value here can be changed based on how much difference in sequence length we are wanting to accept.</span>
+
+<span class="sd">        special_diff: set as False when no special length difference is expected between the lists.</span>
+<span class="sd">                    This can be changed if we want to report common sequences with 1 BP difference.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Error if there is a difference in length or ids between the lists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># check list diffferences, checks if abs(values diff) &lt; allowed_len_diff</span>
+
+        <span class="n">set1</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">list1</span><span class="p">)</span>
+        <span class="n">set2</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">list2</span><span class="p">)</span>
+        <span class="n">list1_2</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">set1</span> <span class="o">-</span> <span class="n">set2</span><span class="p">)</span>
+        <span class="n">list2_1</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">set2</span> <span class="o">-</span> <span class="n">set1</span><span class="p">)</span>
+
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">list1_2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%d</span><span class="s2"> from the first list only (i.e. </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">list1_2</span><span class="p">),</span> <span class="n">list1_2</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">list2_1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%d</span><span class="s2"> from the second list only (i.e. </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">list2_1</span><span class="p">),</span> <span class="n">list2_1</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="n">common_len</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">allowed_len_diff</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">common_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">set1</span> <span class="o">&amp;</span> <span class="n">set2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># check for the sequence length difference</span>
+            <span class="n">diff_len_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">diff_len_special_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">set1</span> <span class="o">&amp;</span> <span class="n">set2</span><span class="p">:</span>
+                <span class="n">dl12</span> <span class="o">=</span> <span class="n">list1</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">-</span> <span class="n">list2</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dl12</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">allowed_len_diff</span><span class="p">:</span>
+                    <span class="n">common_len</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">_dlist</span> <span class="o">=</span> <span class="n">diff_len_list</span>
+                    <span class="c1"># Special case: 1 AA /BP shorter,</span>
+                    <span class="c1">#   so assuming the stop codon is not included in the CDS (when it should be)</span>
+                    <span class="k">if</span> <span class="n">dl12</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">special_diff</span><span class="p">:</span>
+                        <span class="n">_dlist</span> <span class="o">=</span> <span class="n">diff_len_special_list</span>
+                    <span class="n">_dlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%d</span><span class="s2"> vs </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">list1</span><span class="p">[</span><span class="n">e</span><span class="p">],</span> <span class="n">list2</span><span class="p">[</span><span class="n">e</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="n">diff_len_special_list</span><span class="p">:</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> common elements with one BP/AA length diff for </span><span class="si">%s</span><span class="s2"> (e.g. </span><span class="si">%s</span><span class="s2">)&quot;</span>
+                    <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">diff_len_special_list</span><span class="p">),</span> <span class="n">name</span><span class="p">,</span> <span class="n">diff_len_special_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">diff_len_list</span><span class="p">:</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> common elements with length diff for </span><span class="si">%s</span><span class="s2"> (e.g. </span><span class="si">%s</span><span class="s2">)&quot;</span>
+                    <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">diff_len_list</span><span class="p">),</span> <span class="n">name</span><span class="p">,</span> <span class="n">diff_len_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="p">)</span>
+        <span class="k">if</span> <span class="n">common_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> common elements between lists for </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">common_len</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">errors</span></div>
+
+<div class="viewcode-block" id="integrity.check_seq_region_lengths"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.integrity.integrity.check_seq_region_lengths">[docs]</a>    <span class="k">def</span> <span class="nf">check_seq_region_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seqrs</span><span class="p">,</span> <span class="n">feats</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">circular</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the integrity of seq_region.json file by comparing the length of the sequence</span>
+<span class="sd">            to fasta files and the gff.</span>
+
+<span class="sd">            Seq_region file is in json format containing the metadata of the sequence.</span>
+<span class="sd">            It contains sequence id, length, location and the synonyms for the sequence name from different sources.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            seqs: Sequence name and length retrieved from seq_region.json file.</span>
+<span class="sd">            feats: Sequence name and length retrieved from the fasta and gff file.</span>
+<span class="sd">            name: String</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Error if there are common sequences with difference in ids</span>
+<span class="sd">            and if the sequences are not consistent in the files.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">only_seqr</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">only_feat</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">common</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">diff_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># not an error on circular for gff features</span>
+        <span class="n">diff_circular</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">diff_circular_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">seq_id</span> <span class="ow">in</span> <span class="n">seqrs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">seq_id</span> <span class="ow">in</span> <span class="n">feats</span><span class="p">:</span>
+                <span class="c1"># Check that feature is within the seq_region length</span>
+                <span class="k">if</span> <span class="n">feats</span><span class="p">[</span><span class="n">seq_id</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">seqrs</span><span class="p">[</span><span class="n">seq_id</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">circular</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">circular</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">seq_id</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+                        <span class="n">diff</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seq_id</span><span class="p">)</span>
+                        <span class="n">diff_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%d</span><span class="s2"> vs </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">seq_id</span><span class="p">,</span> <span class="n">seqrs</span><span class="p">[</span><span class="n">seq_id</span><span class="p">],</span> <span class="n">feats</span><span class="p">[</span><span class="n">seq_id</span><span class="p">]))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">diff_circular</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seq_id</span><span class="p">)</span>
+                        <span class="n">diff_circular_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%d</span><span class="s2"> vs </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">seq_id</span><span class="p">,</span> <span class="n">seqrs</span><span class="p">[</span><span class="n">seq_id</span><span class="p">],</span> <span class="n">feats</span><span class="p">[</span><span class="n">seq_id</span><span class="p">]))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">common</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seq_id</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">only_seqr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seq_id</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">seq_id</span> <span class="ow">in</span> <span class="n">feats</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">seq_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">common</span> <span class="ow">and</span> <span class="n">seq_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">diff</span> <span class="ow">and</span> <span class="n">seq_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">diff_circular</span><span class="p">:</span>
+                <span class="n">only_feat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seq_id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">common</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> common elements in </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">common</span><span class="p">),</span> <span class="n">name</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">diff_circular</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> differences for circular elements in </span><span class="si">%s</span><span class="s2"> (e.g. </span><span class="si">%s</span><span class="s2">)&quot;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">diff_circular</span><span class="p">),</span> <span class="n">name</span><span class="p">,</span> <span class="n">diff_circular_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="p">)</span>
+
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">diff</span><span class="p">:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> common elements with higher length in </span><span class="si">%s</span><span class="s2"> (e.g. </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">diff</span><span class="p">),</span> <span class="n">name</span><span class="p">,</span> <span class="n">diff_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">only_seqr</span><span class="p">:</span>
+            <span class="c1"># Not an error!</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> only in seq_region list in </span><span class="si">%s</span><span class="s2"> (first: </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">only_seqr</span><span class="p">),</span> <span class="n">name</span><span class="p">,</span> <span class="n">only_seqr</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">only_feat</span><span class="p">:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> only in second list in </span><span class="si">%s</span><span class="s2"> (first: </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">only_feat</span><span class="p">),</span> <span class="n">name</span><span class="p">,</span> <span class="n">only_feat</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="n">errors</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

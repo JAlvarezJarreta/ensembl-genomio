@@ -1,0 +1,12 @@
+ensembl.io namespace
+====================
+
+.. py:module:: ensembl.io
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   ensembl.io.genomio

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.io.genomio.events.load &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.io.genomio.events.load</h1><div class="highlight"><pre>
+<span></span><span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;Provided a file with events, load them in a core database.</span>
+
+<span class="sd">cf the load_events functions for the events tab file format.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">PathLike</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm</span> <span class="kn">import</span> <span class="n">Session</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.database</span> <span class="kn">import</span> <span class="n">DBConnection</span>
+<span class="kn">from</span> <span class="nn">ensembl.core.models</span> <span class="kn">import</span> <span class="n">MappingSession</span><span class="p">,</span> <span class="n">StableIdEvent</span>
+<span class="kn">from</span> <span class="nn">ensembl.utils.argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
+
+
+<div class="viewcode-block" id="IdEvent"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.IdEvent">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">IdEvent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple representation for the events from the input file&quot;&quot;&quot;</span>
+
+    <span class="n">from_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">to_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">event</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">release</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">release_date</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">from_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_date</span><span class="p">]</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span>
+
+<div class="viewcode-block" id="IdEvent.is_change"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.IdEvent.is_change">[docs]</a>    <span class="k">def</span> <span class="nf">is_change</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the event is an update of an existing gene.&quot;&quot;&quot;</span>
+        <span class="n">changed_events</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;iso_gain&quot;</span><span class="p">,</span> <span class="s2">&quot;iso_loss&quot;</span><span class="p">,</span> <span class="s2">&quot;broken&quot;</span><span class="p">,</span> <span class="s2">&quot;changed&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="ow">in</span> <span class="n">changed_events</span></div></div>
+
+
+<div class="viewcode-block" id="MapSession"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.MapSession">[docs]</a><span class="k">class</span> <span class="nc">MapSession</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple mapping_sessions representation from the input file&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">release</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">release_date</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release</span> <span class="o">=</span> <span class="n">release</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release_date</span> <span class="o">=</span> <span class="n">release_date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">IdEvent</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="MapSession.add_event"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.MapSession.add_event">[docs]</a>    <span class="k">def</span> <span class="nf">add_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">IdEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an event to this mapping_session&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="EventCollection"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection">[docs]</a><span class="k">class</span> <span class="nc">EventCollection</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; &quot;Collection of events with loader/writer in various formats.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">IdEvent</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="EventCollection.load_events"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.load_events">[docs]</a>    <span class="k">def</span> <span class="nf">load_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load events from input file.</span>
+<span class="sd">        Expected tab file columns: old_id, new_id, event_name, release, release_date</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">events</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">IdEvent</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">with</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">events_fh</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">events_fh</span><span class="p">:</span>
+                <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="p">(</span><span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span><span class="p">,</span> <span class="n">event_name</span><span class="p">,</span> <span class="n">release</span><span class="p">,</span> <span class="n">release_date</span><span class="p">)</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">event</span> <span class="o">=</span> <span class="n">IdEvent</span><span class="p">(</span>
+                    <span class="n">from_id</span><span class="o">=</span><span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span><span class="o">=</span><span class="n">to_id</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="n">event_name</span><span class="p">,</span> <span class="n">release</span><span class="o">=</span><span class="n">release</span><span class="p">,</span> <span class="n">release_date</span><span class="o">=</span><span class="n">release_date</span>
+                <span class="p">)</span>
+                <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="o">=</span> <span class="n">events</span></div>
+
+<div class="viewcode-block" id="EventCollection.add_deletes"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.add_deletes">[docs]</a>    <span class="k">def</span> <span class="nf">add_deletes</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">genes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">release_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;release_name&quot;</span><span class="p">,</span> <span class="n">release_date</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;release_date&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add deletion events from a list of deleted genes.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">gene_id</span> <span class="ow">in</span> <span class="n">genes</span><span class="p">:</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">IdEvent</span><span class="p">(</span>
+                <span class="n">from_id</span><span class="o">=</span><span class="n">gene_id</span><span class="p">,</span> <span class="n">to_id</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="s2">&quot;deletion&quot;</span><span class="p">,</span> <span class="n">release</span><span class="o">=</span><span class="n">release_name</span><span class="p">,</span> <span class="n">release_date</span><span class="o">=</span><span class="n">release_date</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EventCollection.load_events_from_gene_diff"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.load_events_from_gene_diff">[docs]</a>    <span class="k">def</span> <span class="nf">load_events_from_gene_diff</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">,</span> <span class="n">release_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;release_name&quot;</span><span class="p">,</span> <span class="n">release_date</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;release_date&quot;</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load events from input file from gene_diff.&quot;&quot;&quot;</span>
+        <span class="n">loaded_event</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="k">with</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">events_fh</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">events_fh</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;//&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">line</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">event_string</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_gene_diff_event</span><span class="p">(</span><span class="n">event_string</span><span class="p">):</span>
+                    <span class="p">(</span><span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span><span class="p">,</span> <span class="n">event_name</span><span class="p">)</span> <span class="o">=</span> <span class="n">pair</span>
+                    <span class="k">if</span> <span class="n">event_name</span> <span class="o">==</span> <span class="s2">&quot;identical&quot;</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">fingerprint</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">from_id</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">to_id</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="k">if</span> <span class="n">fingerprint</span> <span class="ow">in</span> <span class="n">loaded_event</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duplicated event, skipped: </span><span class="si">{</span><span class="n">fingerprint</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="n">loaded_event</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fingerprint</span><span class="p">)</span>
+                    <span class="n">event</span> <span class="o">=</span> <span class="n">IdEvent</span><span class="p">(</span>
+                        <span class="n">from_id</span><span class="o">=</span><span class="n">from_id</span><span class="p">,</span>
+                        <span class="n">to_id</span><span class="o">=</span><span class="n">to_id</span><span class="p">,</span>
+                        <span class="n">event</span><span class="o">=</span><span class="n">event_name</span><span class="p">,</span>
+                        <span class="n">release</span><span class="o">=</span><span class="n">release_name</span><span class="p">,</span>
+                        <span class="n">release_date</span><span class="o">=</span><span class="n">release_date</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_parse_gene_diff_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all the pairs of IDs from an event string from gene diff.&quot;&quot;&quot;</span>
+        <span class="n">event_symbol</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;~&quot;</span><span class="p">:</span> <span class="s2">&quot;identical&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;=+&quot;</span><span class="p">:</span> <span class="s2">&quot;iso_gain&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;=-&quot;</span><span class="p">:</span> <span class="s2">&quot;iso_loss&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;=!&quot;</span><span class="p">:</span> <span class="s2">&quot;broken&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;=&quot;</span><span class="p">:</span> <span class="s2">&quot;changed&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;&gt;&quot;</span><span class="p">:</span> <span class="s2">&quot;merge&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;&lt;&quot;</span><span class="p">:</span> <span class="s2">&quot;split&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;+&quot;</span><span class="p">:</span> <span class="s2">&quot;new&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">event_sep</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">symbol</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\+&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="n">event_symbol</span><span class="p">])</span>
+        <span class="n">splitter</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">event_sep</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">splitter</span><span class="p">,</span> <span class="n">event_string</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Wrong partition: from &#39;</span><span class="si">{</span><span class="n">event_string</span><span class="si">}</span><span class="s2">&#39; to &#39;</span><span class="si">{</span><span class="n">parts</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="p">[</span><span class="n">from_ids</span><span class="p">,</span> <span class="n">sep</span><span class="p">,</span> <span class="n">to_ids</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span>
+        <span class="n">event_name</span> <span class="o">=</span> <span class="n">event_symbol</span><span class="p">[</span><span class="n">sep</span><span class="p">]</span>
+
+        <span class="c1"># Identical gene: no need to keep in the history</span>
+        <span class="k">for</span> <span class="n">from_id</span> <span class="ow">in</span> <span class="n">from_ids</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">to_id</span> <span class="ow">in</span> <span class="n">to_ids</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span><span class="p">,</span> <span class="n">event_name</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EventCollection.remap_to_ids"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.remap_to_ids">[docs]</a>    <span class="k">def</span> <span class="nf">remap_to_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Using a mapping dict, remap the to_id of all events.&quot;&quot;&quot;</span>
+
+        <span class="n">no_map</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">event</span><span class="o">.</span><span class="n">to_id</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">is_change</span><span class="p">():</span>
+                <span class="n">event</span><span class="o">.</span><span class="n">to_id</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">from_id</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">to_id</span> <span class="ow">in</span> <span class="n">map_dict</span><span class="p">:</span>
+                <span class="n">event</span><span class="o">.</span><span class="n">to_id</span> <span class="o">=</span> <span class="n">map_dict</span><span class="p">[</span><span class="n">event</span><span class="o">.</span><span class="n">to_id</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No map for to_id </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">to_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">no_map</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">no_map</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No map for </span><span class="si">{</span><span class="n">no_map</span><span class="si">}</span><span class="s2"> event to_ids&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EventCollection.write_events_to_file"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.write_events_to_file">[docs]</a>    <span class="k">def</span> <span class="nf">write_events_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_file</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write the events to a file.&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_fh</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Write </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="p">)</span><span class="si">}</span><span class="s2"> events to </span><span class="si">{</span><span class="n">output_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="p">:</span>
+                <span class="n">out_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">event</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EventCollection.write_events_to_db"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.write_events_to_db">[docs]</a>    <span class="k">def</span> <span class="nf">write_events_to_db</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">update</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Insert the events in the core database.</span>
+<span class="sd">        A mapping session is created for each different &#39;release&#39;.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># First, create mapping_sessions based on the release</span>
+        <span class="n">mappings</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MapSession</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="p">:</span>
+            <span class="n">release</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">release</span>
+            <span class="k">if</span> <span class="n">release</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mappings</span><span class="p">:</span>
+                <span class="n">mappings</span><span class="p">[</span><span class="n">release</span><span class="p">]</span> <span class="o">=</span> <span class="n">MapSession</span><span class="p">(</span><span class="n">release</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">release_date</span><span class="p">)</span>
+            <span class="n">mappings</span><span class="p">[</span><span class="n">release</span><span class="p">]</span><span class="o">.</span><span class="n">add_event</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="c1"># Then, add the mapping, and the events for this mapping</span>
+        <span class="k">for</span> <span class="n">release</span><span class="p">,</span> <span class="n">mapping</span> <span class="ow">in</span> <span class="n">mappings</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">update</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Adding mapping for release </span><span class="si">{</span><span class="n">release</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">events</span><span class="p">)</span><span class="si">}</span><span class="s2"> events)&quot;</span><span class="p">)</span>
+                <span class="n">map_session</span> <span class="o">=</span> <span class="n">MappingSession</span><span class="p">(</span><span class="n">new_release</span><span class="o">=</span><span class="n">mapping</span><span class="o">.</span><span class="n">release</span><span class="p">,</span> <span class="n">created</span><span class="o">=</span><span class="n">mapping</span><span class="o">.</span><span class="n">release_date</span><span class="p">)</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">map_session</span><span class="p">)</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">map_session</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">mapping</span><span class="o">.</span><span class="n">events</span><span class="p">:</span>
+                    <span class="n">from_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">from_id</span>
+                    <span class="k">if</span> <span class="n">from_id</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="n">from_id</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">to_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">to_id</span>
+                    <span class="k">if</span> <span class="n">to_id</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="n">to_id</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">id_event</span> <span class="o">=</span> <span class="n">StableIdEvent</span><span class="p">(</span>
+                        <span class="n">mapping_session_id</span><span class="o">=</span><span class="n">map_session</span><span class="o">.</span><span class="n">mapping_session_id</span><span class="p">,</span>
+                        <span class="n">old_stable_id</span><span class="o">=</span><span class="n">from_id</span><span class="p">,</span>
+                        <span class="n">new_stable_id</span><span class="o">=</span><span class="n">to_id</span><span class="p">,</span>
+                        <span class="n">id_type</span><span class="o">=</span><span class="s2">&quot;gene&quot;</span><span class="p">,</span>
+                        <span class="n">old_version</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                        <span class="n">new_version</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">id_event</span><span class="p">)</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found mapping for release </span><span class="si">{</span><span class="n">release</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">events</span><span class="p">)</span><span class="si">}</span><span class="s2"> events)&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">update</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Run your command again with &#39;--update&#39; to add them&quot;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entrypoint&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Load the events in the input file into a core database.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_server_arguments</span><span class="p">(</span><span class="n">include_database</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_src_path</span><span class="p">(</span>
+        <span class="s2">&quot;--input_file&quot;</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Input TSV file with events in the format exported by the dumper: old_id, new_id, event_name, &quot;</span>
+            <span class="s2">&quot;release, date&quot;</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--update&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Make changes to the database&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># Start</span>
+    <span class="n">dbc</span> <span class="o">=</span> <span class="n">DBConnection</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+
+    <span class="n">collection</span> <span class="o">=</span> <span class="n">EventCollection</span><span class="p">()</span>
+    <span class="n">collection</span><span class="o">.</span><span class="n">load_events</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_file</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">dbc</span><span class="o">.</span><span class="n">session_scope</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+        <span class="n">collection</span><span class="o">.</span><span class="n">write_events_to_db</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">update</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

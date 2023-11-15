@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.brc4.runnable.manifest &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.brc4.runnable.manifest</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!env python3</span>
+<span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+
+<span class="kn">import</span> <span class="nn">eHive</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.io.genomio.utils.json_utils</span> <span class="kn">import</span> <span class="n">print_json</span><span class="p">,</span> <span class="n">get_json</span>
+
+
+<div class="viewcode-block" id="manifest"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.manifest.manifest">[docs]</a><span class="k">class</span> <span class="nc">manifest</span><span class="p">(</span><span class="n">eHive</span><span class="o">.</span><span class="n">BaseRunnable</span><span class="p">):</span>
+<div class="viewcode-block" id="manifest.run"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.manifest.manifest.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">manifest_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;manifest_files&quot;</span><span class="p">)</span>
+        <span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;output_dir&quot;</span><span class="p">))</span>
+
+        <span class="c1"># Assume there is a genome file and get metadata from it</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;genome&quot;</span> <span class="ow">in</span> <span class="n">manifest_files</span><span class="p">:</span>
+            <span class="n">genome_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;genome_json&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">genome_file</span><span class="p">:</span>
+                <span class="n">manifest_files</span><span class="p">[</span><span class="s2">&quot;genome&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">genome_file</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Processed genome metadata file is missing&quot;</span><span class="p">)</span>
+
+        <span class="c1"># to configure the file names</span>
+        <span class="n">genome_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_genome_data</span><span class="p">(</span><span class="n">manifest_files</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">genome_data</span><span class="p">)</span>
+
+        <span class="c1"># Get BRC4 component, organism if any</span>
+        <span class="n">component</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">genome_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;genome_name&quot;</span><span class="p">)</span>
+        <span class="n">species</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;species&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">genome_name</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;BRC4&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;component&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;BRC4&quot;</span><span class="p">]:</span>
+                    <span class="n">component</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;BRC4&quot;</span><span class="p">][</span><span class="s2">&quot;component&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s2">&quot;organism_abbrev&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;BRC4&quot;</span><span class="p">]:</span>
+                    <span class="n">genome_name</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;BRC4&quot;</span><span class="p">][</span><span class="s2">&quot;organism_abbrev&quot;</span><span class="p">]</span>
+
+            <span class="c1"># RETROCOMPATIBILITY</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">genome_name</span> <span class="o">==</span> <span class="kc">None</span>
+                <span class="ow">and</span> <span class="s2">&quot;species&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span>
+                <span class="ow">and</span> <span class="s2">&quot;BRC4_organism_abbrev&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">]</span>
+            <span class="p">):</span>
+                <span class="n">genome_name</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">][</span><span class="s2">&quot;BRC4_organism_abbrev&quot;</span><span class="p">]</span>
+
+            <span class="c1"># Get the species name (production_name)</span>
+            <span class="k">if</span> <span class="s2">&quot;species&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span> <span class="ow">and</span> <span class="s2">&quot;production_name&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">]:</span>
+                <span class="n">species</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">][</span><span class="s2">&quot;production_name&quot;</span><span class="p">]</span>
+
+            <span class="c1"># Default species name</span>
+            <span class="k">if</span> <span class="n">genome_name</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">species</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">genome_name</span> <span class="o">=</span> <span class="n">species</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No species&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Define genome directory</span>
+        <span class="n">genome_dir</span> <span class="o">=</span> <span class="n">output_dir</span>
+        <span class="k">if</span> <span class="n">component</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">genome_dir</span> <span class="o">=</span> <span class="n">genome_dir</span> <span class="o">/</span> <span class="n">component</span>
+        <span class="n">genome_dir</span> <span class="o">=</span> <span class="n">genome_dir</span> <span class="o">/</span> <span class="n">genome_name</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">genome_dir</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+            <span class="n">genome_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Genome directory: &#39;</span><span class="si">{</span><span class="n">genome_dir</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Move all files to the output dir, with a new name</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">manifest_files</span><span class="p">)</span>
+        <span class="n">final_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy_files</span><span class="p">(</span><span class="n">genome_dir</span><span class="p">,</span> <span class="n">manifest_files</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">genome_name</span><span class="p">)</span>
+
+        <span class="c1"># Create th manifest file itself</span>
+        <span class="n">manifest_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_manifest</span><span class="p">(</span><span class="n">genome_dir</span><span class="p">,</span> <span class="n">final_files</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataflow</span><span class="p">({</span><span class="s2">&quot;manifest&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">)},</span> <span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="manifest.get_genome_data"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.manifest.manifest.get_genome_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_genome_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s2">&quot;genome&quot;</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">get_json</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">files</span><span class="p">[</span><span class="s2">&quot;genome&quot;</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No genome file&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="manifest.copy_files"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.manifest.manifest.copy_files">[docs]</a>    <span class="k">def</span> <span class="nf">copy_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">genome_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">species</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">genome_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+        <span class="n">final_files</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">files</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">final_files</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="c1"># Nested files</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">subname</span><span class="p">,</span> <span class="n">subvalue</span> <span class="ow">in</span> <span class="n">files</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">file_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">subvalue</span><span class="p">)</span>
+                    <span class="n">final_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">genome_dir</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">genome_name</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">final_file</span><span class="p">:</span>
+                        <span class="n">final_files</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">subname</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_file</span>
+
+            <span class="c1"># Not nested files</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">file_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">final_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">genome_dir</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">genome_name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">final_file</span><span class="p">:</span>
+                    <span class="n">final_files</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_file</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">final_files</span><span class="p">[</span><span class="n">name</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">final_files</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">final_files</span></div>
+
+<div class="viewcode-block" id="manifest.copy_file"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.manifest.manifest.copy_file">[docs]</a>    <span class="k">def</span> <span class="nf">copy_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">origin_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">dir_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">species</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">genome_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">origin_path</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Define the new file name</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="n">origin_path</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">if</span> <span class="n">species</span> <span class="o">!=</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">genome_name</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">file_name</span> <span class="o">=</span> <span class="n">file_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">genome_name</span><span class="p">)</span>
+        <span class="n">final_path</span> <span class="o">=</span> <span class="n">dir_path</span> <span class="o">/</span> <span class="n">file_name</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">origin_path</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">final_path</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">dir_path</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Copy file</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">origin_path</span><span class="p">,</span> <span class="n">final_path</span><span class="p">)</span>
+
+        <span class="c1"># Compute md5sum</span>
+        <span class="n">md5sum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_md5sum</span><span class="p">(</span><span class="n">final_path</span><span class="p">)</span>
+
+        <span class="n">file_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;file&quot;</span><span class="p">:</span> <span class="n">file_name</span><span class="p">,</span> <span class="s2">&quot;md5sum&quot;</span><span class="p">:</span> <span class="n">md5sum</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">file_data</span></div>
+
+<div class="viewcode-block" id="manifest.get_md5sum"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.manifest.manifest.get_md5sum">[docs]</a>    <span class="k">def</span> <span class="nf">get_md5sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">file_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="nb">bytes</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="nb">bytes</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="manifest.create_manifest"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.manifest.manifest.create_manifest">[docs]</a>    <span class="k">def</span> <span class="nf">create_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">genome_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="n">manifest_path</span> <span class="o">=</span> <span class="n">genome_dir</span> <span class="o">/</span> <span class="s2">&quot;manifest.json&quot;</span>
+        <span class="n">print_json</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">,</span> <span class="n">files</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">manifest_path</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

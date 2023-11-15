@@ -1,0 +1,26 @@
+ensembl.io.genomio.utils package
+================================
+
+.. automodule:: ensembl.io.genomio.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.io.genomio.utils.archive\_utils module
+----------------------------------------------
+
+.. automodule:: ensembl.io.genomio.utils.archive_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.utils.json\_utils module
+-------------------------------------------
+
+.. automodule:: ensembl.io.genomio.utils.json_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:

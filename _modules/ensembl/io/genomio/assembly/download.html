@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.io.genomio.assembly.download &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.io.genomio.assembly.download</h1><div class="highlight"><pre>
+<span></span><span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;Download an assembly data files from INSDC or RefSeq.&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;FileDownloadError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UnsupportedFormatError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;md5_files&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_checksums&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;download_files&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_files_selection&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_root_name&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;retrieve_assembly_data&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">ftplib</span> <span class="kn">import</span> <span class="n">FTP</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">reload</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">PathLike</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.utils.argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
+
+
+<span class="n">_FILE_ENDS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;assembly_report.txt&quot;</span><span class="p">:</span> <span class="s2">&quot;report&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;genomic.fna.gz&quot;</span><span class="p">:</span> <span class="s2">&quot;fasta_dna&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;protein.faa.gz&quot;</span><span class="p">:</span> <span class="s2">&quot;fasta_pep&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;genomic.gff.gz&quot;</span><span class="p">:</span> <span class="s2">&quot;gff3_raw&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;genomic.gbff.gz&quot;</span><span class="p">:</span> <span class="s2">&quot;gbff&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="FileDownloadError"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.FileDownloadError">[docs]</a><span class="k">class</span> <span class="nc">FileDownloadError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;When a file download fails or there is a problem with that file.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="UnsupportedFormatError"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.UnsupportedFormatError">[docs]</a><span class="k">class</span> <span class="nc">UnsupportedFormatError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;When a string does not have the expected format.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="md5_files"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.md5_files">[docs]</a><span class="k">def</span> <span class="nf">md5_files</span><span class="p">(</span><span class="n">dl_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check all files checksums with the sums listed in a checksum file, if available.</span>
+<span class="sd">    Return False if there is no checksum file, or a file is missing, or has a wrong checksum.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">md5_file</span> <span class="o">=</span> <span class="s2">&quot;md5checksums.txt&quot;</span>
+    <span class="c1"># Get checksums and compare</span>
+    <span class="n">md5_path</span> <span class="o">=</span> <span class="n">dl_dir</span> <span class="o">/</span> <span class="n">md5_file</span>
+    <span class="n">sums</span> <span class="o">=</span> <span class="n">get_checksums</span><span class="p">(</span><span class="n">md5_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sums</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; File sums from </span><span class="si">{</span><span class="n">md5_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sums</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">dl_file</span><span class="p">,</span> <span class="n">checksum</span> <span class="ow">in</span> <span class="n">sums</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">_FILE_ENDS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dl_file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">end</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">dl_file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;_from_</span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">):</span>
+                <span class="n">file_path</span> <span class="o">=</span> <span class="n">dl_dir</span> <span class="o">/</span> <span class="n">dl_file</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; No file </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2"> found&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                <span class="c1"># Check the file checksum</span>
+                <span class="k">with</span> <span class="n">file_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                    <span class="n">file_sum</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">file_sum</span> <span class="o">!=</span> <span class="n">checksum</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; File </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2"> checksum doesn&#39;t match&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; File checksum ok </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; All checksums OK&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="get_checksums"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.get_checksums">[docs]</a><span class="k">def</span> <span class="nf">get_checksums</span><span class="p">(</span><span class="n">checksum_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get a dict of checksums from a file, with file names as keys and sums as values</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sums</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">checksum_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">sums</span>
+    <span class="k">with</span> <span class="n">checksum_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="n">checksum</span><span class="p">,</span> <span class="n">file_path</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;  &quot;</span><span class="p">)</span>
+            <span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">sums</span><span class="p">[</span><span class="n">file_path</span><span class="p">]</span> <span class="o">=</span> <span class="n">checksum</span>
+    <span class="k">return</span> <span class="n">sums</span></div>
+
+
+<div class="viewcode-block" id="download_files"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.download_files">[docs]</a><span class="k">def</span> <span class="nf">download_files</span><span class="p">(</span><span class="n">accession</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dl_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">max_redo</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given an INSDC accession, download all available files from the ftp to the download dir</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(GC[AF])_([0-9]</span><span class="si">{3}</span><span class="s2">)([0-9]</span><span class="si">{3}</span><span class="s2">)([0-9]</span><span class="si">{3}</span><span class="s2">)\.?([0-9]+)&quot;</span><span class="p">,</span> <span class="n">accession</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">UnsupportedFormatError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not recognize GCA accession format: </span><span class="si">{</span><span class="n">accession</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">gca</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">part1</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">part2</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">part3</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+
+    <span class="c1"># Get the list of assemblies for this accession</span>
+    <span class="n">ftp_url</span> <span class="o">=</span> <span class="s2">&quot;ftp.ncbi.nlm.nih.gov&quot;</span>
+    <span class="n">sub_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;genomes&quot;</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">gca</span><span class="p">,</span> <span class="n">part1</span><span class="p">,</span> <span class="n">part2</span><span class="p">,</span> <span class="n">part3</span><span class="p">)</span>
+    <span class="n">ftp_conn</span> <span class="o">=</span> <span class="n">FTP</span><span class="p">()</span>
+    <span class="n">ftp_conn</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">ftp_url</span><span class="p">)</span>
+    <span class="n">ftp_conn</span><span class="o">.</span><span class="n">login</span><span class="p">()</span>
+    <span class="n">ftp_conn</span><span class="o">.</span><span class="n">cwd</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">sub_dir</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">ftp_dir</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">ftp_conn</span><span class="o">.</span><span class="n">mlsd</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">accession</span><span class="p">,</span> <span class="n">ftp_dir</span><span class="p">):</span>
+            <span class="n">ftp_conn</span><span class="o">.</span><span class="n">cwd</span><span class="p">(</span><span class="n">ftp_dir</span><span class="p">)</span>
+            <span class="c1"># First, get the md5sum file</span>
+            <span class="n">md5_file</span> <span class="o">=</span> <span class="s2">&quot;md5checksums.txt&quot;</span>
+            <span class="n">md5_path</span> <span class="o">=</span> <span class="n">dl_dir</span> <span class="o">/</span> <span class="n">md5_file</span>
+            <span class="k">with</span> <span class="n">md5_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                <span class="n">ftp_conn</span><span class="o">.</span><span class="n">retrbinary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RETR </span><span class="si">{</span><span class="n">md5_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">write</span><span class="p">)</span>
+            <span class="n">md5_sums</span> <span class="o">=</span> <span class="n">get_checksums</span><span class="p">(</span><span class="n">md5_path</span><span class="p">)</span>
+
+            <span class="c1"># Get all the files</span>
+            <span class="k">for</span> <span class="n">ftp_file</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">ftp_conn</span><span class="o">.</span><span class="n">mlsd</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">_FILE_ENDS</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">ftp_file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">end</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">ftp_file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;_from_</span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">):</span>
+                        <span class="n">_download_file</span><span class="p">(</span><span class="n">ftp_conn</span><span class="p">,</span> <span class="n">ftp_file</span><span class="p">,</span> <span class="n">md5_sums</span><span class="p">,</span> <span class="n">dl_dir</span><span class="p">,</span> <span class="n">max_redo</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_download_file</span><span class="p">(</span>
+    <span class="n">ftp_conn</span><span class="p">:</span> <span class="n">FTP</span><span class="p">,</span> <span class="n">ftp_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">md5_sums</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">dl_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">max_redo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;TODO&quot;&quot;&quot;</span>
+    <span class="n">has_md5</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">expected_sum</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ftp_file</span> <span class="ow">in</span> <span class="n">md5_sums</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; File not in the md5 checksums: </span><span class="si">{</span><span class="n">ftp_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">has_md5</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">expected_sum</span> <span class="o">=</span> <span class="n">md5_sums</span><span class="p">[</span><span class="n">ftp_file</span><span class="p">]</span>
+    <span class="n">local_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">dl_dir</span><span class="p">,</span> <span class="n">ftp_file</span><span class="p">)</span>
+
+    <span class="c1"># File exists? Check md5sum before anything else</span>
+    <span class="k">if</span> <span class="n">local_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">has_md5</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">local_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                <span class="n">content</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="n">file_sum</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">file_sum</span> <span class="o">==</span> <span class="n">expected_sum</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; File </span><span class="si">{</span><span class="n">local_path</span><span class="si">}</span><span class="s2"> is already downloaded properly&quot;</span><span class="p">)</span>
+                    <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; Can&#39;t check file (no md5sum), using it as is: </span><span class="si">{</span><span class="n">local_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">file_sum</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">redo</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">while</span> <span class="p">(</span><span class="n">file_sum</span> <span class="o">!=</span> <span class="n">expected_sum</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">redo</span> <span class="o">&lt;=</span> <span class="n">max_redo</span><span class="p">):</span>
+        <span class="n">redo</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">redo</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+        <span class="c1"># Download the file</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; Downloading file </span><span class="si">{</span><span class="n">ftp_file</span><span class="si">}</span><span class="s2">, try </span><span class="si">{</span><span class="n">redo</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">local_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                <span class="n">ftp_conn</span><span class="o">.</span><span class="n">retrbinary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RETR </span><span class="si">{</span><span class="n">ftp_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">write</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">EOFError</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">has_md5</span><span class="p">:</span>
+            <span class="n">file_sum</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">continue</span>
+        <span class="c1"># Compute checksum</span>
+        <span class="k">with</span> <span class="n">local_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="n">file_sum</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">expected_sum</span> <span class="o">==</span> <span class="n">file_sum</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; Downloaded file properly to </span><span class="si">{</span><span class="n">local_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">FileDownloadError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not download file </span><span class="si">{</span><span class="n">ftp_file</span><span class="si">}</span><span class="s2"> after </span><span class="si">{</span><span class="n">redo</span><span class="si">}</span><span class="s2"> tries&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_files_selection"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.get_files_selection">[docs]</a><span class="k">def</span> <span class="nf">get_files_selection</span><span class="p">(</span><span class="n">dl_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Among all the files downloaded, only keep a subset for which we use a controlled name.</span>
+<span class="sd">    Return a dict[name] = file_path</span>
+<span class="sd">    The file_path is relative to the download dir</span>
+<span class="sd">    Current names are defined in _FILE_ENDS</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">root_name</span> <span class="o">=</span> <span class="n">get_root_name</span><span class="p">(</span><span class="n">dl_dir</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">root_name</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">FileDownloadError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not determine the files root name in </span><span class="si">{</span><span class="n">dl_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">dl_file</span> <span class="ow">in</span> <span class="n">dl_dir</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">end</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_FILE_ENDS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">file_with_end</span> <span class="o">=</span> <span class="n">dl_file</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">end</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">dl_file</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;_from_</span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">root_name</span> <span class="ow">and</span> <span class="n">dl_file</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">root_name</span> <span class="o">+</span> <span class="n">end</span><span class="p">)</span> <span class="ow">or</span> <span class="n">file_with_end</span><span class="p">:</span>
+                <span class="n">files</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">dl_file</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">files</span></div>
+
+
+<div class="viewcode-block" id="get_root_name"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.get_root_name">[docs]</a><span class="k">def</span> <span class="nf">get_root_name</span><span class="p">(</span><span class="n">dl_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get root name for assembly files, using the report file as base&quot;&quot;&quot;</span>
+    <span class="n">root_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">dl_file</span> <span class="ow">in</span> <span class="n">dl_dir</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;^(.+_)assembly_report.txt&quot;</span><span class="p">,</span> <span class="n">dl_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">matches</span><span class="p">:</span>
+            <span class="n">root_name</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">root_name</span></div>
+
+
+<div class="viewcode-block" id="retrieve_assembly_data"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.retrieve_assembly_data">[docs]</a><span class="k">def</span> <span class="nf">retrieve_assembly_data</span><span class="p">(</span>
+    <span class="n">accession</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">download_dir</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">,</span>
+    <span class="n">max_increment</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">max_redo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;TODO</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        accession: Genome Assembly accession</span>
+<span class="sd">        download_dir: Path to directory used to store retrieved</span>
+<span class="sd">        max_increment: If you want to allow assembly versions</span>
+<span class="sd">        max_redo: Set max number of times to retry downloading a file</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">download_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">download_dir</span><span class="p">)</span>
+    <span class="n">download_dir</span> <span class="o">=</span> <span class="n">download_path</span> <span class="o">/</span> <span class="n">accession</span>
+
+    <span class="c1"># Configure logging</span>
+    <span class="n">log_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">accession</span><span class="si">}</span><span class="s2">_download.log&quot;</span>
+    <span class="n">reload</span><span class="p">(</span><span class="n">logging</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+        <span class="n">filename</span><span class="o">=</span><span class="n">log_file</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(levelname)s</span><span class="s2">:</span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">filemode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Set and create dedicated dir for download</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">download_dir</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+        <span class="n">download_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Download if files don&#39;t exist or fail checksum</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">md5_files</span><span class="p">(</span><span class="n">download_dir</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; Download the files&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">increment</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_increment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">increment</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; Increment accession version once from </span><span class="si">{</span><span class="n">accession</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">version</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">accession</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">version</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">accession</span> <span class="o">=</span> <span class="n">accession</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">version</span><span class="p">)</span>
+                <span class="n">download_dir</span> <span class="o">=</span> <span class="n">download_path</span> <span class="o">/</span> <span class="n">accession</span>
+                <span class="n">download_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">download_files</span><span class="p">(</span><span class="n">accession</span><span class="p">,</span> <span class="n">download_dir</span><span class="p">,</span> <span class="n">max_redo</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">md5_files</span><span class="p">(</span><span class="n">download_dir</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">FileDownloadError</span><span class="p">(</span><span class="s2">&quot;Failed md5sum of downloaded files&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Select specific files and give them a name</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">get_files_selection</span><span class="p">(</span><span class="n">download_dir</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">FileDownloadError</span><span class="p">(</span><span class="s2">&quot;No file downloaded&quot;</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Module&#39;s entry-point.&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Download an assembly data files from INSDC or RefSeq.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--accession&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Genome assembly accession&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_dst_path</span><span class="p">(</span>
+        <span class="s2">&quot;--download_dir&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">(),</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Folder where the data will be downloaded&quot;</span>
+    <span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">retrieve_assembly_data</span><span class="p">(</span><span class="o">**</span><span class="nb">vars</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

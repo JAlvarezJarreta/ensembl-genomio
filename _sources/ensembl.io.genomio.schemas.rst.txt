@@ -1,0 +1,15 @@
+ensembl.io.genomio.schemas package
+==================================
+
+.. automodule:: ensembl.io.genomio.schemas
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   ensembl.io.genomio.schemas.json

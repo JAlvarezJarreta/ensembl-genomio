@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>ensembl.io.genomio package &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/agogo.css?v=cc331ede" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-ensembl.io.genomio">
+<span id="ensembl-io-genomio-package"></span><h1>ensembl.io.genomio package<a class="headerlink" href="#module-ensembl.io.genomio" title="Permalink to this heading">¶</a></h1>
+<p>Genome Input/Output (GenomIO) handling library.</p>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.assembly.html">ensembl.io.genomio.assembly package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.assembly.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.assembly.html#module-ensembl.io.genomio.assembly.download">ensembl.io.genomio.assembly.download module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.FileDownloadError"><code class="docutils literal notranslate"><span class="pre">FileDownloadError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.UnsupportedFormatError"><code class="docutils literal notranslate"><span class="pre">UnsupportedFormatError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.download_files"><code class="docutils literal notranslate"><span class="pre">download_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.get_checksums"><code class="docutils literal notranslate"><span class="pre">get_checksums()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.get_files_selection"><code class="docutils literal notranslate"><span class="pre">get_files_selection()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.get_root_name"><code class="docutils literal notranslate"><span class="pre">get_root_name()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.md5_files"><code class="docutils literal notranslate"><span class="pre">md5_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.assembly.html#ensembl.io.genomio.assembly.download.retrieve_assembly_data"><code class="docutils literal notranslate"><span class="pre">retrieve_assembly_data()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.database.html">ensembl.io.genomio.database package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.database.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.database.html#module-ensembl.io.genomio.database.factory">ensembl.io.genomio.database.factory module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.database.html#ensembl.io.genomio.database.factory.format_db_data"><code class="docutils literal notranslate"><span class="pre">format_db_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.database.html#ensembl.io.genomio.database.factory.get_metadata_value"><code class="docutils literal notranslate"><span class="pre">get_metadata_value()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.database.html#ensembl.io.genomio.database.factory.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.events.html">ensembl.io.genomio.events package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.events.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.events.html#module-ensembl.io.genomio.events.dump">ensembl.io.genomio.events.dump module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs"><code class="docutils literal notranslate"><span class="pre">DumpStableIDs</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.server"><code class="docutils literal notranslate"><span class="pre">DumpStableIDs.server</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.extend_event"><code class="docutils literal notranslate"><span class="pre">DumpStableIDs.extend_event()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.get_history"><code class="docutils literal notranslate"><span class="pre">DumpStableIDs.get_history()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.get_mapping_sessions"><code class="docutils literal notranslate"><span class="pre">DumpStableIDs.get_mapping_sessions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.get_pairs"><code class="docutils literal notranslate"><span class="pre">DumpStableIDs.get_pairs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.get_pairs_from_to"><code class="docutils literal notranslate"><span class="pre">DumpStableIDs.get_pairs_from_to()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.make_events"><code class="docutils literal notranslate"><span class="pre">DumpStableIDs.make_events()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.print_events"><code class="docutils literal notranslate"><span class="pre">DumpStableIDs.print_events()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.Pair"><code class="docutils literal notranslate"><span class="pre">Pair</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.Pair.has_new_id"><code class="docutils literal notranslate"><span class="pre">Pair.has_new_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.Pair.has_old_id"><code class="docutils literal notranslate"><span class="pre">Pair.has_old_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.Pair.is_empty"><code class="docutils literal notranslate"><span class="pre">Pair.is_empty()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent"><code class="docutils literal notranslate"><span class="pre">StableIdEvent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.from_list"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.from_list</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.to_list"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.to_list</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.release"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.release</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.date"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.date</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.name"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.pairs"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.pairs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.add_from"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.add_from()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.add_pair"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.add_pair()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.add_pairs"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.add_pairs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.add_to"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.add_to()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.brc_format_1"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.brc_format_1()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.brc_format_2"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.brc_format_2()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.clean_pairs"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.clean_pairs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.clean_set"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.clean_set()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.get_full_release"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.get_full_release()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.get_name"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.get_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.set_date"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.set_date()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.set_release"><code class="docutils literal notranslate"><span class="pre">StableIdEvent.set_release()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.UnsupportedEvent"><code class="docutils literal notranslate"><span class="pre">UnsupportedEvent</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.events.html#module-ensembl.io.genomio.events.format">ensembl.io.genomio.events.format module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.format.IdsMapper"><code class="docutils literal notranslate"><span class="pre">IdsMapper</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.format.load_list"><code class="docutils literal notranslate"><span class="pre">load_list()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.events.html#module-ensembl.io.genomio.events.load">ensembl.io.genomio.events.load module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection"><code class="docutils literal notranslate"><span class="pre">EventCollection</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.add_deletes"><code class="docutils literal notranslate"><span class="pre">EventCollection.add_deletes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.load_events"><code class="docutils literal notranslate"><span class="pre">EventCollection.load_events()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.load_events_from_gene_diff"><code class="docutils literal notranslate"><span class="pre">EventCollection.load_events_from_gene_diff()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.remap_to_ids"><code class="docutils literal notranslate"><span class="pre">EventCollection.remap_to_ids()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.write_events_to_db"><code class="docutils literal notranslate"><span class="pre">EventCollection.write_events_to_db()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.EventCollection.write_events_to_file"><code class="docutils literal notranslate"><span class="pre">EventCollection.write_events_to_file()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.IdEvent"><code class="docutils literal notranslate"><span class="pre">IdEvent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.IdEvent.event"><code class="docutils literal notranslate"><span class="pre">IdEvent.event</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.IdEvent.from_id"><code class="docutils literal notranslate"><span class="pre">IdEvent.from_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.IdEvent.is_change"><code class="docutils literal notranslate"><span class="pre">IdEvent.is_change()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.IdEvent.release"><code class="docutils literal notranslate"><span class="pre">IdEvent.release</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.IdEvent.release_date"><code class="docutils literal notranslate"><span class="pre">IdEvent.release_date</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.IdEvent.to_id"><code class="docutils literal notranslate"><span class="pre">IdEvent.to_id</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.MapSession"><code class="docutils literal notranslate"><span class="pre">MapSession</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.MapSession.add_event"><code class="docutils literal notranslate"><span class="pre">MapSession.add_event()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.events.html#ensembl.io.genomio.events.load.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.fasta.html">ensembl.io.genomio.fasta package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.fasta.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.fasta.html#module-ensembl.io.genomio.fasta.process">ensembl.io.genomio.fasta.process module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.fasta.html#ensembl.io.genomio.fasta.process.GFFParserError"><code class="docutils literal notranslate"><span class="pre">GFFParserError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.fasta.html#ensembl.io.genomio.fasta.process.get_peptides_to_exclude"><code class="docutils literal notranslate"><span class="pre">get_peptides_to_exclude()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.fasta.html#ensembl.io.genomio.fasta.process.prep_fasta_data"><code class="docutils literal notranslate"><span class="pre">prep_fasta_data()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.genbank.html">ensembl.io.genomio.genbank package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.genbank.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.genbank.html#module-ensembl.io.genomio.genbank.download">ensembl.io.genomio.genbank.download module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.download.DownloadError"><code class="docutils literal notranslate"><span class="pre">DownloadError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.download.download_genbank"><code class="docutils literal notranslate"><span class="pre">download_genbank()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.genbank.html#module-ensembl.io.genomio.genbank.extract_data">ensembl.io.genomio.genbank.extract_data module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.extract_data.FormattedFilesGenerator"><code class="docutils literal notranslate"><span class="pre">FormattedFilesGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.extract_data.FormattedFilesGenerator.allowed_feat_types"><code class="docutils literal notranslate"><span class="pre">FormattedFilesGenerator.allowed_feat_types</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.extract_data.FormattedFilesGenerator.extract_gb"><code class="docutils literal notranslate"><span class="pre">FormattedFilesGenerator.extract_gb()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.extract_data.FormattedFilesGenerator.locations"><code class="docutils literal notranslate"><span class="pre">FormattedFilesGenerator.locations</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.extract_data.FormattedFilesGenerator.parse_genbank"><code class="docutils literal notranslate"><span class="pre">FormattedFilesGenerator.parse_genbank()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.extract_data.FormattedFilesGenerator.set_prefix"><code class="docutils literal notranslate"><span class="pre">FormattedFilesGenerator.set_prefix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.extract_data.FormattedFilesGenerator.set_production_name"><code class="docutils literal notranslate"><span class="pre">FormattedFilesGenerator.set_production_name()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.extract_data.GBParseError"><code class="docutils literal notranslate"><span class="pre">GBParseError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.extract_data.GenomeFiles"><code class="docutils literal notranslate"><span class="pre">GenomeFiles</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genbank.html#ensembl.io.genomio.genbank.extract_data.UnsupportedData"><code class="docutils literal notranslate"><span class="pre">UnsupportedData</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html">ensembl.io.genomio.genome_metadata package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#module-ensembl.io.genomio.genome_metadata.dump">ensembl.io.genomio.genome_metadata.dump module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.dump.check_assembly_version"><code class="docutils literal notranslate"><span class="pre">check_assembly_version()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.dump.filter_genome_meta"><code class="docutils literal notranslate"><span class="pre">filter_genome_meta()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.dump.get_genome_metadata"><code class="docutils literal notranslate"><span class="pre">get_genome_metadata()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#module-ensembl.io.genomio.genome_metadata.extend">ensembl.io.genomio.genome_metadata.extend module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.extend.MissingDataError"><code class="docutils literal notranslate"><span class="pre">MissingDataError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.extend.amend_genomic_metadata"><code class="docutils literal notranslate"><span class="pre">amend_genomic_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.extend.get_additions"><code class="docutils literal notranslate"><span class="pre">get_additions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.extend.get_gbff_regions"><code class="docutils literal notranslate"><span class="pre">get_gbff_regions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.extend.get_report_regions_names"><code class="docutils literal notranslate"><span class="pre">get_report_regions_names()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#module-ensembl.io.genomio.genome_metadata.prepare">ensembl.io.genomio.genome_metadata.prepare module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.MetadataError"><code class="docutils literal notranslate"><span class="pre">MetadataError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.MissingNodeError"><code class="docutils literal notranslate"><span class="pre">MissingNodeError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.add_assembly_version"><code class="docutils literal notranslate"><span class="pre">add_assembly_version()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.add_genebuild_metadata"><code class="docutils literal notranslate"><span class="pre">add_genebuild_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.add_provider"><code class="docutils literal notranslate"><span class="pre">add_provider()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.add_species_metadata"><code class="docutils literal notranslate"><span class="pre">add_species_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.get_taxonomy_from_accession"><code class="docutils literal notranslate"><span class="pre">get_taxonomy_from_accession()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.prepare.prepare_genome_metadata"><code class="docutils literal notranslate"><span class="pre">prepare_genome_metadata()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html">ensembl.io.genomio.genome_stats package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#module-ensembl.io.genomio.genome_stats.compare">ensembl.io.genomio.genome_stats.compare module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.compare.compare_annotation"><code class="docutils literal notranslate"><span class="pre">compare_annotation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.compare.compare_assembly"><code class="docutils literal notranslate"><span class="pre">compare_assembly()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.compare.compare_stats"><code class="docutils literal notranslate"><span class="pre">compare_stats()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#module-ensembl.io.genomio.genome_stats.dump">ensembl.io.genomio.genome_stats.dump module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.dump.StatsGenerator"><code class="docutils literal notranslate"><span class="pre">StatsGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.dump.StatsGenerator.get_annotation_stats"><code class="docutils literal notranslate"><span class="pre">StatsGenerator.get_annotation_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.dump.StatsGenerator.get_assembly_stats"><code class="docutils literal notranslate"><span class="pre">StatsGenerator.get_assembly_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.dump.StatsGenerator.get_attrib_counts"><code class="docutils literal notranslate"><span class="pre">StatsGenerator.get_attrib_counts()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.dump.StatsGenerator.get_biotypes"><code class="docutils literal notranslate"><span class="pre">StatsGenerator.get_biotypes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.dump.StatsGenerator.get_feature_stats"><code class="docutils literal notranslate"><span class="pre">StatsGenerator.get_feature_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.dump.StatsGenerator.get_stats"><code class="docutils literal notranslate"><span class="pre">StatsGenerator.get_stats()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.gff3.html">ensembl.io.genomio.gff3 package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.gff3.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.gff3.html#module-ensembl.io.genomio.gff3.extract_annotation">ensembl.io.genomio.gff3.extract_annotation module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.AnnotationError"><code class="docutils literal notranslate"><span class="pre">AnnotationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.DuplicateIdError"><code class="docutils literal notranslate"><span class="pre">DuplicateIdError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations"><code class="docutils literal notranslate"><span class="pre">FunctionalAnnotations</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.add_feature"><code class="docutils literal notranslate"><span class="pre">FunctionalAnnotations.add_feature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.add_parent"><code class="docutils literal notranslate"><span class="pre">FunctionalAnnotations.add_parent()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.get_features"><code class="docutils literal notranslate"><span class="pre">FunctionalAnnotations.get_features()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.get_parent"><code class="docutils literal notranslate"><span class="pre">FunctionalAnnotations.get_parent()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.product_is_informative"><code class="docutils literal notranslate"><span class="pre">FunctionalAnnotations.product_is_informative()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.to_json"><code class="docutils literal notranslate"><span class="pre">FunctionalAnnotations.to_json()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.MissingParentError"><code class="docutils literal notranslate"><span class="pre">MissingParentError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.gff3.html#module-ensembl.io.genomio.gff3.process">ensembl.io.genomio.gff3.process module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFGeneMerger"><code class="docutils literal notranslate"><span class="pre">GFFGeneMerger</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFGeneMerger.merge"><code class="docutils literal notranslate"><span class="pre">GFFGeneMerger.merge()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFParserError"><code class="docutils literal notranslate"><span class="pre">GFFParserError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.allow_pseudogene_with_CDS"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.allow_pseudogene_with_CDS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.build_transcript"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.build_transcript()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.cds_gene"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.cds_gene()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.clean_extra_exons"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.clean_extra_exons()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.current_stable_id_number"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.current_stable_id_number</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.exclude_seq_regions"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.exclude_seq_regions</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.format_gene_segments"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.format_gene_segments()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.format_mobile_element"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.format_mobile_element()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.gene_cds_skip_others"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.gene_cds_skip_others</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.gene_to_cds"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.gene_to_cds()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.gene_to_exon"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.gene_to_exon()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.generate_stable_id"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.generate_stable_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.min_id_length"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.min_id_length</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.move_cds_to_mrna"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.move_cds_to_mrna()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_cds_id"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.normalize_cds_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_gene"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.normalize_gene()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_gene_id"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.normalize_gene_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_pseudogene_cds"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.normalize_pseudogene_cds()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_transcript_id"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.normalize_transcript_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.remove_cds_from_pseudogene"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.remove_cds_from_pseudogene()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.remove_prefixes"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.remove_prefixes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.simpler_gff3"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.simpler_gff3()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.skip_unrecognized"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.skip_unrecognized</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.stable_id_prefix"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.stable_id_prefix</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.transcript_for_gene"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.transcript_for_gene()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.transcript_gene"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.transcript_gene()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.valid_id"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.valid_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.validate_gene_id"><code class="docutils literal notranslate"><span class="pre">GFFSimplifier.validate_gene_id</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.Records"><code class="docutils literal notranslate"><span class="pre">Records</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.Records.to_gff"><code class="docutils literal notranslate"><span class="pre">Records.to_gff()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.manifest.html">ensembl.io.genomio.manifest package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.manifest.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.manifest.html#module-ensembl.io.genomio.manifest.check_integrity">ensembl.io.genomio.manifest.check_integrity module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.IntegrityTool"><code class="docutils literal notranslate"><span class="pre">IntegrityTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.add_errors"><code class="docutils literal notranslate"><span class="pre">IntegrityTool.add_errors()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_ids"><code class="docutils literal notranslate"><span class="pre">IntegrityTool.check_ids()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_integrity"><code class="docutils literal notranslate"><span class="pre">IntegrityTool.check_integrity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_lengths"><code class="docutils literal notranslate"><span class="pre">IntegrityTool.check_lengths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_seq_region_lengths"><code class="docutils literal notranslate"><span class="pre">IntegrityTool.check_seq_region_lengths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.set_brc_mode"><code class="docutils literal notranslate"><span class="pre">IntegrityTool.set_brc_mode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.set_ignore_final_stops"><code class="docutils literal notranslate"><span class="pre">IntegrityTool.set_ignore_final_stops()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.InvalidIntegrityError"><code class="docutils literal notranslate"><span class="pre">InvalidIntegrityError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.Manifest"><code class="docutils literal notranslate"><span class="pre">Manifest</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.Manifest.get_agp_seq_regions"><code class="docutils literal notranslate"><span class="pre">Manifest.get_agp_seq_regions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.Manifest.get_circular"><code class="docutils literal notranslate"><span class="pre">Manifest.get_circular()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.Manifest.get_fasta_lengths"><code class="docutils literal notranslate"><span class="pre">Manifest.get_fasta_lengths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.Manifest.get_functional_annotation"><code class="docutils literal notranslate"><span class="pre">Manifest.get_functional_annotation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.Manifest.get_gff3"><code class="docutils literal notranslate"><span class="pre">Manifest.get_gff3()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.Manifest.get_lengths"><code class="docutils literal notranslate"><span class="pre">Manifest.get_lengths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.Manifest.get_manifest"><code class="docutils literal notranslate"><span class="pre">Manifest.get_manifest()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.Manifest.has_lengths"><code class="docutils literal notranslate"><span class="pre">Manifest.has_lengths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.Manifest.prepare_integrity_data"><code class="docutils literal notranslate"><span class="pre">Manifest.prepare_integrity_data()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.check_integrity.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.manifest.html#module-ensembl.io.genomio.manifest.compute_stats">ensembl.io.genomio.manifest.compute_stats module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter"><code class="docutils literal notranslate"><span class="pre">BiotypeCounter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter.add_id"><code class="docutils literal notranslate"><span class="pre">BiotypeCounter.add_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter.unique_count"><code class="docutils literal notranslate"><span class="pre">BiotypeCounter.unique_count()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.StatsError"><code class="docutils literal notranslate"><span class="pre">StatsError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats"><code class="docutils literal notranslate"><span class="pre">manifest_stats</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats.biotypes_stats"><code class="docutils literal notranslate"><span class="pre">manifest_stats.biotypes_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats.check_ncbi_stats"><code class="docutils literal notranslate"><span class="pre">manifest_stats.check_ncbi_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats.compare_ncbi_counts"><code class="docutils literal notranslate"><span class="pre">manifest_stats.compare_ncbi_counts()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats.coord_systems_stats"><code class="docutils literal notranslate"><span class="pre">manifest_stats.coord_systems_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats.count_biotypes"><code class="docutils literal notranslate"><span class="pre">manifest_stats.count_biotypes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats.get_gff3_stats"><code class="docutils literal notranslate"><span class="pre">manifest_stats.get_gff3_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats.get_manifest"><code class="docutils literal notranslate"><span class="pre">manifest_stats.get_manifest()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats.get_seq_region_stats"><code class="docutils literal notranslate"><span class="pre">manifest_stats.get_seq_region_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats.increment_biotype"><code class="docutils literal notranslate"><span class="pre">manifest_stats.increment_biotype()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats.run"><code class="docutils literal notranslate"><span class="pre">manifest_stats.run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.compute_stats.manifest_stats.seq_region_special_stats"><code class="docutils literal notranslate"><span class="pre">manifest_stats.seq_region_special_stats()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.manifest.html#module-ensembl.io.genomio.manifest.generate">ensembl.io.genomio.manifest.generate module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.generate.ManifestMaker"><code class="docutils literal notranslate"><span class="pre">ManifestMaker</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.generate.ManifestMaker.alias_names"><code class="docutils literal notranslate"><span class="pre">ManifestMaker.alias_names</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.generate.ManifestMaker.create_manifest"><code class="docutils literal notranslate"><span class="pre">ManifestMaker.create_manifest()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.generate.ManifestMaker.get_files_checksums"><code class="docutils literal notranslate"><span class="pre">ManifestMaker.get_files_checksums()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.generate.ManifestMaker.names"><code class="docutils literal notranslate"><span class="pre">ManifestMaker.names</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.generate.ManifestMaker.same_names"><code class="docutils literal notranslate"><span class="pre">ManifestMaker.same_names</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.manifest.html#ensembl.io.genomio.manifest.generate.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.schemas.html">ensembl.io.genomio.schemas package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.schemas.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.schemas.json.html">ensembl.io.genomio.schemas.json package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.schemas.json.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.schemas.json.html#module-ensembl.io.genomio.schemas.json.factory">ensembl.io.genomio.schemas.json.factory module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ensembl.io.genomio.schemas.json.html#module-ensembl.io.genomio.schemas.json.validate">ensembl.io.genomio.schemas.json.validate module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.seq_region.html">ensembl.io.genomio.seq_region package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#module-ensembl.io.genomio.seq_region.dump">ensembl.io.genomio.seq_region.dump module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.dump.MapFormatError"><code class="docutils literal notranslate"><span class="pre">MapFormatError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.dump.add_attribs"><code class="docutils literal notranslate"><span class="pre">add_attribs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.dump.get_attribs"><code class="docutils literal notranslate"><span class="pre">get_attribs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.dump.get_coord_systems"><code class="docutils literal notranslate"><span class="pre">get_coord_systems()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.dump.get_external_db_map"><code class="docutils literal notranslate"><span class="pre">get_external_db_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.dump.get_karyotype"><code class="docutils literal notranslate"><span class="pre">get_karyotype()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.dump.get_seq_regions"><code class="docutils literal notranslate"><span class="pre">get_seq_regions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.dump.get_synonyms"><code class="docutils literal notranslate"><span class="pre">get_synonyms()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.dump.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#module-ensembl.io.genomio.seq_region.prepare">ensembl.io.genomio.seq_region.prepare module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.UnknownMetadata"><code class="docutils literal notranslate"><span class="pre">UnknownMetadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.add_insdc_seq_region_name"><code class="docutils literal notranslate"><span class="pre">add_insdc_seq_region_name()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.add_mitochondrial_codon_table"><code class="docutils literal notranslate"><span class="pre">add_mitochondrial_codon_table()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.add_translation_table"><code class="docutils literal notranslate"><span class="pre">add_translation_table()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.exclude_seq_regions"><code class="docutils literal notranslate"><span class="pre">exclude_seq_regions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.get_codon_table"><code class="docutils literal notranslate"><span class="pre">get_codon_table()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.get_gbff_seq_regions"><code class="docutils literal notranslate"><span class="pre">get_gbff_seq_regions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.get_genbank_id"><code class="docutils literal notranslate"><span class="pre">get_genbank_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.get_organelle"><code class="docutils literal notranslate"><span class="pre">get_organelle()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.get_report_regions"><code class="docutils literal notranslate"><span class="pre">get_report_regions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.make_seq_region"><code class="docutils literal notranslate"><span class="pre">make_seq_region()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.merge_seq_regions"><code class="docutils literal notranslate"><span class="pre">merge_seq_regions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.prepare_seq_region_metadata"><code class="docutils literal notranslate"><span class="pre">prepare_seq_region_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.seq_region.html#ensembl.io.genomio.seq_region.prepare.report_to_csv"><code class="docutils literal notranslate"><span class="pre">report_to_csv()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ensembl.io.genomio.utils.html">ensembl.io.genomio.utils package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.utils.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.utils.html#module-ensembl.io.genomio.utils.archive_utils">ensembl.io.genomio.utils.archive_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.utils.html#ensembl.io.genomio.utils.archive_utils.extract_file"><code class="docutils literal notranslate"><span class="pre">extract_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.utils.html#ensembl.io.genomio.utils.archive_utils.open_gz_file"><code class="docutils literal notranslate"><span class="pre">open_gz_file()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ensembl.io.genomio.utils.html#module-ensembl.io.genomio.utils.json_utils">ensembl.io.genomio.utils.json_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.utils.html#ensembl.io.genomio.utils.json_utils.get_json"><code class="docutils literal notranslate"><span class="pre">get_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ensembl.io.genomio.utils.html#ensembl.io.genomio.utils.json_utils.print_json"><code class="docutils literal notranslate"><span class="pre">print_json()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+              <br/>
+              <a href="_sources/ensembl.io.genomio.rst.txt"
+                rel="nofollow">Show Source</a>
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

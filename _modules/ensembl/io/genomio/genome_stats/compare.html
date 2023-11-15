@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.io.genomio.genome_stats.compare &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.io.genomio.genome_stats.compare</h1><div class="highlight"><pre>
+<span></span><span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;Compare stats in a JSON from NCBI dataset and a JSON from our core db.</span>
+
+<span class="sd">Returns the JSON from our core db including a section with comparisons.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;compare_assembly&quot;</span><span class="p">,</span> <span class="s2">&quot;compare_annotation&quot;</span><span class="p">,</span> <span class="s2">&quot;compare_stats&quot;</span><span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.io.genomio.utils</span> <span class="kn">import</span> <span class="n">get_json</span>
+<span class="kn">from</span> <span class="nn">ensembl.utils.argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
+
+
+<span class="k">def</span> <span class="nf">_diff_dicts</span><span class="p">(</span><span class="n">ncbi</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">core</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compare two dicts with the same keys and compute the difference of their values.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dict with 2 dicts:</span>
+<span class="sd">        - same: List of keys that have the same count</span>
+<span class="sd">        - different: Dict of keys with different count, with values for ncbi, core, and diff (=core - ncbi)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">diff</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">same</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">ncbi_count</span> <span class="ow">in</span> <span class="n">ncbi</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">core_count</span> <span class="o">=</span> <span class="n">core</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">ncbi_count</span> <span class="o">==</span> <span class="n">core_count</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ncbi_count</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">same</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">ncbi_count</span>
+            <span class="k">continue</span>
+        <span class="n">diff</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ncbi&quot;</span><span class="p">:</span> <span class="n">ncbi_count</span><span class="p">,</span> <span class="s2">&quot;core&quot;</span><span class="p">:</span> <span class="n">core_count</span><span class="p">,</span> <span class="s2">&quot;diff&quot;</span><span class="p">:</span> <span class="n">core_count</span> <span class="o">-</span> <span class="n">ncbi_count</span><span class="p">}</span>
+
+    <span class="n">comp</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">same</span><span class="p">:</span>
+        <span class="n">comp</span><span class="p">[</span><span class="s2">&quot;same&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">same</span>
+    <span class="k">if</span> <span class="n">diff</span><span class="p">:</span>
+        <span class="n">comp</span><span class="p">[</span><span class="s2">&quot;different&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diff</span>
+    <span class="k">return</span> <span class="n">comp</span>
+
+
+<div class="viewcode-block" id="compare_assembly"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.compare.compare_assembly">[docs]</a><span class="k">def</span> <span class="nf">compare_assembly</span><span class="p">(</span><span class="n">ncbi</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">core</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a compilation of count comparisons.</span>
+<span class="sd">    Each comparison is a dict with the value from NCBI, from Core, and their diff.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ncbi: Dict of stats from NCBI.</span>
+<span class="sd">        core: Dict of assembly stats from the core.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict: Each count from NCBI, from Core, and their diff.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Prepare counts to be comparable to the NCBI stats</span>
+    <span class="n">ncbi_main</span> <span class="o">=</span> <span class="n">ncbi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;assembly_stats&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">ncbi_info</span> <span class="o">=</span> <span class="n">ncbi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;assembly_info&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">ncbi_organella</span> <span class="o">=</span> <span class="n">ncbi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;organelle_info&quot;</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="c1"># First count the organella</span>
+    <span class="n">core_num_organella</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">core_num_chrs</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">loc</span><span class="p">,</span> <span class="n">loc_count</span> <span class="ow">in</span> <span class="n">core</span><span class="p">[</span><span class="s2">&quot;locations&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">loc</span> <span class="o">==</span> <span class="s2">&quot;nuclear_chromosome&quot;</span><span class="p">:</span>
+            <span class="n">core_num_chrs</span> <span class="o">+=</span> <span class="n">loc_count</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">core_num_organella</span> <span class="o">+=</span> <span class="n">loc_count</span>
+
+    <span class="c1"># Our core stats count Organella chromosomes, sanity check here</span>
+    <span class="n">core_chr</span> <span class="o">=</span> <span class="n">core</span><span class="p">[</span><span class="s2">&quot;coord_system&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;chromosome&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">core_adjusted_chrs</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">core_chr</span><span class="p">:</span>
+        <span class="n">core_adjusted_chrs</span> <span class="o">=</span> <span class="n">core_chr</span> <span class="o">-</span> <span class="n">core_num_organella</span>
+
+    <span class="c1"># Number of scaffolds from our core</span>
+    <span class="n">core_num_scaffolds</span> <span class="o">=</span> <span class="n">core</span><span class="p">[</span><span class="s2">&quot;coord_system&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;scaffold&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># NCBI includes the chromosomes in its stats</span>
+    <span class="n">core_adjusted_scaffolds</span> <span class="o">=</span> <span class="n">core_num_scaffolds</span> <span class="o">+</span> <span class="n">core_num_chrs</span>
+
+    <span class="c1"># Compile the counts</span>
+    <span class="n">ncbi_counts</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;num_organella&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">ncbi_organella</span><span class="p">),</span>
+        <span class="s2">&quot;num_chromosomes&quot;</span><span class="p">:</span> <span class="n">ncbi_main</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_number_of_chromosomes&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="s2">&quot;num_scaffolds&quot;</span><span class="p">:</span> <span class="n">ncbi_main</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;number_of_scaffolds&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="s2">&quot;num_contigs&quot;</span><span class="p">:</span> <span class="n">ncbi_main</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;number_of_contigs&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">}</span>
+    <span class="n">core_counts</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;num_organella&quot;</span><span class="p">:</span> <span class="n">core_num_organella</span><span class="p">,</span>
+        <span class="s2">&quot;num_chromosomes&quot;</span><span class="p">:</span> <span class="n">core_adjusted_chrs</span><span class="p">,</span>
+        <span class="s2">&quot;num_scaffolds&quot;</span><span class="p">:</span> <span class="n">core_adjusted_scaffolds</span><span class="p">,</span>
+        <span class="s2">&quot;num_contigs&quot;</span><span class="p">:</span> <span class="n">core</span><span class="p">[</span><span class="s2">&quot;coord_system&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;contig&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Only compare contigs if there are any in the core db</span>
+    <span class="k">if</span> <span class="n">ncbi_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;assembly_level&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;Contig&quot;</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">ncbi_counts</span><span class="p">[</span><span class="s2">&quot;num_contigs&quot;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">core_counts</span><span class="p">[</span><span class="s2">&quot;num_contigs&quot;</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">_diff_dicts</span><span class="p">(</span><span class="n">ncbi_counts</span><span class="p">,</span> <span class="n">core_counts</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compare_annotation"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.compare.compare_annotation">[docs]</a><span class="k">def</span> <span class="nf">compare_annotation</span><span class="p">(</span><span class="n">ncbi</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">core</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compare NCBI vs Core annotation stats (biotype counts).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ncbi: Dict of biotype counts from NCBI.</span>
+<span class="sd">        core: Dict of biotype counts from the core.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict: Each count from NCBI, from Core, and their diff.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Prepare counts to be comparable</span>
+    <span class="n">core_biotypes</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;genes&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;biotypes&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="c1"># We want a value for:</span>
+    <span class="c1"># protein_coding = same</span>
+    <span class="c1"># pseudogene = all pseudogene biotypes</span>
+    <span class="c1"># total = same</span>
+    <span class="c1"># other = number of misc_RNA</span>
+
+    <span class="n">ncbi_counts</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;protein_coding&quot;</span><span class="p">:</span> <span class="n">ncbi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;protein_coding&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="s2">&quot;pseudogene&quot;</span><span class="p">:</span> <span class="n">ncbi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pseudogene&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="s2">&quot;total_genes&quot;</span><span class="p">:</span> <span class="n">ncbi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="s2">&quot;other&quot;</span><span class="p">:</span> <span class="n">ncbi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;other&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Add all pseudogenes</span>
+    <span class="n">num_pseudogenes</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">core_biotypes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s2">&quot;.*pseudogen.*&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="n">num_pseudogenes</span> <span class="o">+=</span> <span class="n">num</span>
+
+    <span class="c1"># Others? misc_mRNA (or anything similar?)</span>
+    <span class="n">num_others</span> <span class="o">=</span> <span class="n">core_biotypes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;misc_RNA&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">core_counts</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;protein_coding&quot;</span><span class="p">:</span> <span class="n">core_biotypes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;protein_coding&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="s2">&quot;pseudogene&quot;</span><span class="p">:</span> <span class="n">num_pseudogenes</span><span class="p">,</span>
+        <span class="s2">&quot;total_genes&quot;</span><span class="p">:</span> <span class="n">core</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;genes&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="s2">&quot;other&quot;</span><span class="p">:</span> <span class="n">num_others</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">_diff_dicts</span><span class="p">(</span><span class="n">ncbi_counts</span><span class="p">,</span> <span class="n">core_counts</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compare_stats"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_stats.html#ensembl.io.genomio.genome_stats.compare.compare_stats">[docs]</a><span class="k">def</span> <span class="nf">compare_stats</span><span class="p">(</span><span class="n">ncbi</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">core</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compare stats from NCBI and our core.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ncbi: Dict of stats from NCBI.</span>
+<span class="sd">        core: Dict of stats from the core.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict: Each count from NCBI, from Core, and their diff.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ncbi_annotation_stats</span> <span class="o">=</span> <span class="n">ncbi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;annotation_info&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stats&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gene_counts&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">core_assembly_stats</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;assembly_stats&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">core_annotation_stats</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;annotation_stats&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="n">comp</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;assembly_diff&quot;</span><span class="p">:</span> <span class="n">compare_assembly</span><span class="p">(</span><span class="n">ncbi</span><span class="p">,</span> <span class="n">core_assembly_stats</span><span class="p">),</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">core_annotation_stats</span> <span class="ow">and</span> <span class="n">ncbi_annotation_stats</span><span class="p">:</span>
+        <span class="n">comp</span><span class="p">[</span><span class="s2">&quot;annotation_diff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">compare_annotation</span><span class="p">(</span><span class="n">ncbi_annotation_stats</span><span class="p">,</span> <span class="n">core_annotation_stats</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">comp</span></div>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main script entry-point.&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Compare genome statistics between an NCBI dataset and a core database.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_src_path</span><span class="p">(</span><span class="s2">&quot;--ncbi_stats&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NCBI dataset JSON file&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_src_path</span><span class="p">(</span><span class="s2">&quot;--core_stats&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Core database JSON file&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ncbi_stats</span> <span class="o">=</span> <span class="n">get_json</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ncbi_stats</span><span class="p">)[</span><span class="s2">&quot;reports&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">ncbi_stats</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">core_stats</span> <span class="o">=</span> <span class="n">get_json</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">core_stats</span><span class="p">)</span>
+    <span class="n">all_stats</span> <span class="o">=</span> <span class="n">compare_stats</span><span class="p">(</span><span class="n">ncbi_stats</span><span class="p">,</span> <span class="n">core_stats</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">all_stats</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

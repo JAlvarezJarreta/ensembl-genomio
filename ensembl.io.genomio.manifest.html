@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>ensembl.io.genomio.manifest package &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/agogo.css?v=cc331ede" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-ensembl.io.genomio.manifest">
+<span id="ensembl-io-genomio-manifest-package"></span><h1>ensembl.io.genomio.manifest package<a class="headerlink" href="#module-ensembl.io.genomio.manifest" title="Permalink to this heading">¶</a></h1>
+<p>Manifest files handling module.</p>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-ensembl.io.genomio.manifest.check_integrity">
+<span id="ensembl-io-genomio-manifest-check-integrity-module"></span><h2>ensembl.io.genomio.manifest.check_integrity module<a class="headerlink" href="#module-ensembl.io.genomio.manifest.check_integrity" title="Permalink to this heading">¶</a></h2>
+<p>Compare the genomic data in a DNA fasta file, seq_region json, gene models GFF3 and peptide fasta
+to ensure their contents are in sync.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.IntegrityTool">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.manifest.check_integrity.</span></span><span class="sig-name descname"><span class="pre">IntegrityTool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manifest_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">brc_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_final_stops</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#IntegrityTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.IntegrityTool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Check the integrity of sequence and annotation files in the genome</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.IntegrityTool.add_errors">
+<span class="sig-name descname"><span class="pre">add_errors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#IntegrityTool.add_errors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.add_errors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store the given errors in the list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_ids">
+<span class="sig-name descname"><span class="pre">check_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">list2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#IntegrityTool.check_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare the ids in list1 and list2.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>list1</strong> – dict containing sequence ids retrieved from functional.json.</p></li>
+<li><p><strong>list2</strong> – dict containing length and id in the retrieved from the gff.</p></li>
+<li><p><strong>name</strong> – string</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Error if the ids in functional.json and gff do not match.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_integrity">
+<span class="sig-name descname"><span class="pre">check_integrity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#IntegrityTool.check_integrity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_integrity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load files listed in the manifest.json and check the integrity.
+Check if the files are correct by verifying the MD5 hash.
+Check if translation, functional annotation and sequence region ids
+and lengths are consistent with the information in gff.
+Compare sequence length from fasta_dna file to seq_region.json metadata.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_lengths">
+<span class="sig-name descname"><span class="pre">check_lengths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">list2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allowed_len_diff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">special_diff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#IntegrityTool.check_lengths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Check the difference in ids and length between list1 and list2.</dt><dd><p>There are a few special cases here where we allow a certain asymmetry
+by changing the values of the arguments.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>list1</strong> – dict containing length and id of the sequence from fasta files.</p></li>
+<li><p><strong>list2</strong> – dict containing length and id in the retrieved from the gff.</p></li>
+<li><p><strong>name</strong> – string</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>allowed_len_diff<span class="classifier">None to to not accept differences in length between list1 and list2.</span></dt><dd><p>The value can be changed based on how much difference in sequence length we are wanting to accept.</p>
+</dd>
+<dt>special_diff: set as False when no special length difference is expected between the lists.</dt><dd><p>This can be changed if we want to report common sequences with 1 BP difference.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Error if there is a difference in length or ids between the lists.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_seq_region_lengths">
+<span class="sig-name descname"><span class="pre">check_seq_region_lengths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seqrs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feats</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circular</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#IntegrityTool.check_seq_region_lengths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.check_seq_region_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Check the integrity of seq_region.json file by comparing the length of the sequence</dt><dd><p>to fasta files and the gff.</p>
+<p>Seq_region file is in json format containing the metadata of the sequence.
+It contains sequence id, length, location and the synonyms for the sequence name
+from different sources.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seqs</strong> – Sequence name and length retrieved from seq_region.json file.</p></li>
+<li><p><strong>feats</strong> – Sequence name and length retrieved from the fasta and gff file.</p></li>
+<li><p><strong>name</strong> – Name of the check to show in the logs.</p></li>
+<li><p><strong>circular</strong> – Whether any sequence is circular.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Error if there are common sequences with difference in ids
+and if the sequences are not consistent in the files.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.IntegrityTool.set_brc_mode">
+<span class="sig-name descname"><span class="pre">set_brc_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">brc_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#IntegrityTool.set_brc_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.set_brc_mode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set brc mode for this tool and the manifest.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.IntegrityTool.set_ignore_final_stops">
+<span class="sig-name descname"><span class="pre">set_ignore_final_stops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ignore_final_stops</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#IntegrityTool.set_ignore_final_stops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.IntegrityTool.set_ignore_final_stops" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set ignore_final_stops (when calculating peptide length) for this tool and the manifest.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.InvalidIntegrityError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.manifest.check_integrity.</span></span><span class="sig-name descname"><span class="pre">InvalidIntegrityError</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#InvalidIntegrityError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.InvalidIntegrityError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>When a file integrity check fails</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.Manifest">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.manifest.check_integrity.</span></span><span class="sig-name descname"><span class="pre">Manifest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manifest_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#Manifest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.Manifest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Representation of the manifest and its files.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.Manifest.get_agp_seq_regions">
+<span class="sig-name descname"><span class="pre">get_agp_seq_regions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agp_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#Manifest.get_agp_seq_regions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.Manifest.get_agp_seq_regions" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>AGP files describe the assembly of larger sequence objects using smaller objects.</dt><dd><p>Eg: describes the assembly of scaffolds from contigs.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>agp_dict</strong> – dict containing the information about the sequence.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>AGP file is only used in the older builds, not used for current processing.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.Manifest.get_circular">
+<span class="sig-name descname"><span class="pre">get_circular</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#Manifest.get_circular"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.Manifest.get_circular" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dict associating IDs with their is_circular flag from a given file name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.Manifest.get_fasta_lengths">
+<span class="sig-name descname"><span class="pre">get_fasta_lengths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fasta_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_final_stops</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#Manifest.get_fasta_lengths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.Manifest.get_fasta_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the fasta files have the correct ids and no stop codon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fasta_path</strong> – Path to fasta_dna and fasta_pep files.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Error if any empty ids, non-unique ids or stop codons are found in the fasta files.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.Manifest.get_functional_annotation">
+<span class="sig-name descname"><span class="pre">get_functional_annotation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#Manifest.get_functional_annotation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.Manifest.get_functional_annotation" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Load the functional annotation file to retrieve the gene_id and translation id.</dt><dd><p>A functional annotation file contains information about a gene.
+The functional annotation file is stored in a json format containing
+the description, id and object type (eg: “gene”, “transcript”, “translation”).</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>json_path</strong> – Path to functional_annotation.json.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict with gene and translation ids.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.Manifest.get_gff3">
+<span class="sig-name descname"><span class="pre">get_gff3</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gff3_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#Manifest.get_gff3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.Manifest.get_gff3" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>A GFF parser is used to retrieve information in the GFF file such as</dt><dd><p>gene and CDS ids and their corresponding lengths.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>gff3_path</strong> – Path to gff3 file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.Manifest.get_lengths">
+<span class="sig-name descname"><span class="pre">get_lengths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#Manifest.get_lengths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.Manifest.get_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dict associating IDs with their length from a given file name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.Manifest.get_manifest">
+<span class="sig-name descname"><span class="pre">get_manifest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manifest_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#Manifest.get_manifest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.Manifest.get_manifest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the content of a manifest file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Content of the manifest file.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.Manifest.has_lengths">
+<span class="sig-name descname"><span class="pre">has_lengths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#Manifest.has_lengths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.Manifest.has_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if a given name has lengths records.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.Manifest.prepare_integrity_data">
+<span class="sig-name descname"><span class="pre">prepare_integrity_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#Manifest.prepare_integrity_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.Manifest.prepare_integrity_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read all the files and keep a record (IDs and their lengths)
+for each cases to be compared later.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.check_integrity.main">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.manifest.check_integrity.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/check_integrity.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.check_integrity.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main entrypoint.</p>
+</dd></dl>
+
+</section>
+<section id="module-ensembl.io.genomio.manifest.compute_stats">
+<span id="ensembl-io-genomio-manifest-compute-stats-module"></span><h2>ensembl.io.genomio.manifest.compute_stats module<a class="headerlink" href="#module-ensembl.io.genomio.manifest.compute_stats" title="Permalink to this heading">¶</a></h2>
+<p>Compute stats from the current genome files associated with the manifest.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.BiotypeCounter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.manifest.compute_stats.</span></span><span class="sig-name descname"><span class="pre">BiotypeCounter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">example</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#BiotypeCounter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A counter for a given biotype, given a list of features.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.BiotypeCounter.add_id">
+<span class="sig-name descname"><span class="pre">add_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#BiotypeCounter.add_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter.add_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a feature to the counter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>feature_id</strong> (<em>str</em>) – Feature id to add.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.BiotypeCounter.unique_count">
+<span class="sig-name descname"><span class="pre">unique_count</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#BiotypeCounter.unique_count"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter.unique_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total number feature ids added to the counter so far.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>number of features in the counter.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.StatsError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.manifest.compute_stats.</span></span><span class="sig-name descname"><span class="pre">StatsError</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#StatsError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.StatsError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when stats could not be computed.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.main">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.manifest.compute_stats.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main entrypoint.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.manifest.compute_stats.</span></span><span class="sig-name descname"><span class="pre">manifest_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manifest_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accession</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datasets_bin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Representation of the statistics of the set of files listed in the manifest file provided.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats.biotypes_stats">
+<span class="sig-name descname"><span class="pre">biotypes_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">biotypes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter" title="ensembl.io.genomio.manifest.compute_stats.BiotypeCounter"><span class="pre">BiotypeCounter</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats.biotypes_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats.biotypes_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare biotype stats in order of their name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>biotypes</strong> – Biotypes counters.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list with the computed statistics in a printable format.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats.check_ncbi_stats">
+<span class="sig-name descname"><span class="pre">check_ncbi_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">biotypes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter" title="ensembl.io.genomio.manifest.compute_stats.BiotypeCounter"><span class="pre">BiotypeCounter</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats.check_ncbi_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats.check_ncbi_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the dataset tool from NCBI to get stats and compare with what we have</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats.compare_ncbi_counts">
+<span class="sig-name descname"><span class="pre">compare_ncbi_counts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">biotypes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter" title="ensembl.io.genomio.manifest.compute_stats.BiotypeCounter"><span class="pre">BiotypeCounter</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncbi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats.compare_ncbi_counts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats.compare_ncbi_counts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare specific gene stats from NCBI</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats.coord_systems_stats">
+<span class="sig-name descname"><span class="pre">coord_systems_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coord_systems</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats.coord_systems_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats.coord_systems_stats" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>For each coord_system compute various stats:</dt><dd><ul class="simple">
+<li><p>number of sequences</p></li>
+<li><p>sequence length sum, minimum, maximum, mean</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>coord_systems</strong> – Coordinate system dictionary of lengths.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list with the computed statistics in a printable format.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats.count_biotypes">
+<span class="sig-name descname"><span class="pre">count_biotypes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gff3_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter" title="ensembl.io.genomio.manifest.compute_stats.BiotypeCounter"><span class="pre">BiotypeCounter</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats.count_biotypes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats.count_biotypes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count the biotypes in a GFF3 file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>gff3_path</strong> – Path to the GFF3 file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of biotype counters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats.get_gff3_stats">
+<span class="sig-name descname"><span class="pre">get_gff3_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gff3_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats.get_gff3_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats.get_gff3_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract the gene models from the GFF3 file and compute stats.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>gff3_path</strong> (<em>Path</em>) – the GFF3 file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Stats from the gene model.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats.get_manifest">
+<span class="sig-name descname"><span class="pre">get_manifest</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats.get_manifest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats.get_manifest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the files metadata from the manifest json file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A representation of the manifest json data.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats.get_seq_region_stats">
+<span class="sig-name descname"><span class="pre">get_seq_region_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq_region_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats.get_seq_region_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats.get_seq_region_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute stats from the seq_region json file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>seq_region_path</strong> (<em>Path</em>) – the seq_region json file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Stats from the seq_regions.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats.increment_biotype">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">increment_biotype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">biotypes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter" title="ensembl.io.genomio.manifest.compute_stats.BiotypeCounter"><span class="pre">BiotypeCounter</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_biotype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats.increment_biotype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats.increment_biotype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the feature to their respective biotype counter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>biotypes</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><a class="reference internal" href="#ensembl.io.genomio.manifest.compute_stats.BiotypeCounter" title="ensembl.io.genomio.manifest.compute_stats.BiotypeCounter"><em>BiotypeCounter</em></a><em>]</em>) – All current biotypes, with their counter.</p></li>
+<li><p><strong>feature_id</strong> (<em>str</em>) – Feature id to be counted.</p></li>
+<li><p><strong>feature_biotype</strong> (<em>str</em>) – The biotype of the feature.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stats_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute stats in the files and output a stats.txt file in the same folder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ensembl.io.genomio.manifest.compute_stats.StatsError" title="ensembl.io.genomio.manifest.compute_stats.StatsError"><strong>StatsError</strong></a> – Could not compute some stats.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.compute_stats.manifest_stats.seq_region_special_stats">
+<span class="sig-name descname"><span class="pre">seq_region_special_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circular</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">locations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codon_tables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/compute_stats.html#manifest_stats.seq_region_special_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.compute_stats.manifest_stats.seq_region_special_stats" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Prepare stats in case there are circular regions, specific locations and codon_tables.</dt><dd><p>stats.append(f”{count: 9f}      {name}”)</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>circular</strong> – Number of circular regions. Defaults to 0.</p></li>
+<li><p><strong>locations</strong> – The regions and their location. Defaults to None.</p></li>
+<li><p><strong>codon_tables</strong> – The regions and their codon_table. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list with the computed statistics in a printable format.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-ensembl.io.genomio.manifest.generate">
+<span id="ensembl-io-genomio-manifest-generate-module"></span><h2>ensembl.io.genomio.manifest.generate module<a class="headerlink" href="#module-ensembl.io.genomio.manifest.generate" title="Permalink to this heading">¶</a></h2>
+<p>Creates a manifest file in a folder depending on the file names ends.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.generate.ManifestMaker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.manifest.generate.</span></span><span class="sig-name descname"><span class="pre">ManifestMaker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manifest_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/generate.html#ManifestMaker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.generate.ManifestMaker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Given a directory with genomic files, create a manifest json file for them.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.generate.ManifestMaker.alias_names">
+<span class="sig-name descname"><span class="pre">alias_names</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'dna':</span> <span class="pre">'fasta_dna',</span> <span class="pre">'gene_models':</span> <span class="pre">'gff3',</span> <span class="pre">'pep':</span> <span class="pre">'fasta_pep'}</span></em><a class="headerlink" href="#ensembl.io.genomio.manifest.generate.ManifestMaker.alias_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.generate.ManifestMaker.create_manifest">
+<span class="sig-name descname"><span class="pre">create_manifest</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Path</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/generate.html#ManifestMaker.create_manifest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.generate.ManifestMaker.create_manifest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the manifest file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.generate.ManifestMaker.get_files_checksums">
+<span class="sig-name descname"><span class="pre">get_files_checksums</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/generate.html#ManifestMaker.get_files_checksums"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.generate.ManifestMaker.get_files_checksums" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the checksum of all the files in the directory.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.generate.ManifestMaker.names">
+<span class="sig-name descname"><span class="pre">names</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'agp':</span> <span class="pre">'agp',</span> <span class="pre">'dna':</span> <span class="pre">'fasta_dna',</span> <span class="pre">'events':</span> <span class="pre">'events',</span> <span class="pre">'fasta_dna':</span> <span class="pre">'fasta_dna',</span> <span class="pre">'fasta_pep':</span> <span class="pre">'fasta_pep',</span> <span class="pre">'functional_annotation':</span> <span class="pre">'functional_annotation',</span> <span class="pre">'gene_models':</span> <span class="pre">'gff3',</span> <span class="pre">'genome':</span> <span class="pre">'genome',</span> <span class="pre">'gff3':</span> <span class="pre">'gff3',</span> <span class="pre">'pep':</span> <span class="pre">'fasta_pep',</span> <span class="pre">'seq_attrib':</span> <span class="pre">'seq_attrib',</span> <span class="pre">'seq_region':</span> <span class="pre">'seq_region'}</span></em><a class="headerlink" href="#ensembl.io.genomio.manifest.generate.ManifestMaker.names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.generate.ManifestMaker.same_names">
+<span class="sig-name descname"><span class="pre">same_names</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'agp',</span> <span class="pre">'events',</span> <span class="pre">'fasta_dna',</span> <span class="pre">'fasta_pep',</span> <span class="pre">'functional_annotation',</span> <span class="pre">'genome',</span> <span class="pre">'gff3',</span> <span class="pre">'seq_attrib',</span> <span class="pre">'seq_region'}</span></em><a class="headerlink" href="#ensembl.io.genomio.manifest.generate.ManifestMaker.same_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.manifest.generate.main">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.manifest.generate.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/manifest/generate.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.manifest.generate.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main entrypoint.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+              <br/>
+              <a href="_sources/ensembl.io.genomio.manifest.rst.txt"
+                rel="nofollow">Show Source</a>
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

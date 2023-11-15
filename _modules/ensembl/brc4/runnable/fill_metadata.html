@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.brc4.runnable.fill_metadata &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.brc4.runnable.fill_metadata</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!env python3</span>
+<span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+
+<span class="kn">import</span> <span class="nn">eHive</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">subprocess</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">dirname</span><span class="p">,</span> <span class="n">join</span> <span class="k">as</span> <span class="n">pj</span>
+
+
+<div class="viewcode-block" id="fill_metadata"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.fill_metadata.fill_metadata">[docs]</a><span class="k">class</span> <span class="nc">fill_metadata</span><span class="p">(</span><span class="n">eHive</span><span class="o">.</span><span class="n">BaseRunnable</span><span class="p">):</span>
+<div class="viewcode-block" id="fill_metadata.param_defaults"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.fill_metadata.fill_metadata.param_defaults">[docs]</a>    <span class="k">def</span> <span class="nf">param_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;division&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ignore&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">&quot;copy&quot;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="fill_metadata.run"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.fill_metadata.fill_metadata.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># params</span>
+        <span class="n">wd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;work_dir&quot;</span><span class="p">)</span>
+        <span class="n">division</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;division&quot;</span><span class="p">)</span>
+        <span class="n">brc4_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;brc4_mode&quot;</span><span class="p">)</span>
+        <span class="n">ignore</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+        <span class="n">copy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;copy&quot;</span><span class="p">)</span>
+        <span class="n">genome_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;genome_data&quot;</span><span class="p">)</span>
+
+        <span class="c1"># update division and url</span>
+        <span class="k">if</span> <span class="s2">&quot;species&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">:</span>
+            <span class="n">sd</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">]</span>
+            <span class="c1"># Add division, but not needed for BRC4</span>
+            <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;division&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sd</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">brc4_mode</span><span class="p">:</span>
+                <span class="n">sd</span><span class="p">[</span><span class="s2">&quot;division&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">division</span>
+            <span class="k">if</span> <span class="s2">&quot;url&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sd</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;production_name&quot;</span> <span class="ow">in</span> <span class="n">sd</span><span class="p">:</span>
+                    <span class="n">sd</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sd</span><span class="p">[</span><span class="s2">&quot;production_name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span>
+
+        <span class="c1"># RETROCOMPATIBILITY</span>
+        <span class="c1"># provider name and url to assembly.provider_*: retrocompatibility</span>
+        <span class="k">if</span> <span class="s2">&quot;provider&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">:</span>
+            <span class="n">prov</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;provider&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">prov</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s2">&quot;provider_name&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">]:</span>
+                <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;provider_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prov</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;url&quot;</span> <span class="ow">in</span> <span class="n">prov</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s2">&quot;provider_url&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">]:</span>
+                <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;assembly&quot;</span><span class="p">][</span><span class="s2">&quot;provider_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prov</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;provider&quot;</span><span class="p">]</span>
+
+        <span class="c1"># BRC4 organism abbrev: move from species to BRC4 namespace</span>
+        <span class="k">if</span> <span class="s2">&quot;species&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">:</span>
+            <span class="n">sd</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;BRC4_organism_abbrev&quot;</span> <span class="ow">in</span> <span class="n">sd</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;BRC4&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">:</span>
+                    <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;BRC4&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="s2">&quot;organism_abbrev&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;BRC4&quot;</span><span class="p">]:</span>
+                    <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;BRC4&quot;</span><span class="p">][</span><span class="s2">&quot;organism_abbrev&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sd</span><span class="p">[</span><span class="s2">&quot;BRC4_organism_abbrev&quot;</span><span class="p">]</span>
+                <span class="k">del</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">][</span><span class="s2">&quot;BRC4_organism_abbrev&quot;</span><span class="p">]</span>
+        <span class="c1"># END RETROCOMPATIBILITY</span>
+
+        <span class="c1"># Set up display name if not set</span>
+        <span class="k">if</span> <span class="s2">&quot;species&quot;</span> <span class="ow">in</span> <span class="n">genome_data</span><span class="p">:</span>
+            <span class="n">sd</span> <span class="o">=</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;display_name&quot;</span> <span class="ow">in</span> <span class="n">sd</span> <span class="ow">and</span> <span class="s2">&quot;scientific_name&quot;</span> <span class="ow">in</span> <span class="n">sd</span><span class="p">:</span>
+                <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">][</span><span class="s2">&quot;display_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sd</span><span class="p">[</span><span class="s2">&quot;scientific_name&quot;</span><span class="p">]</span>
+
+        <span class="c1"># flattern and dump</span>
+        <span class="n">flat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flattern</span><span class="p">(</span><span class="n">genome_data</span><span class="p">,</span> <span class="n">ignore</span><span class="p">)</span>
+        <span class="n">flat</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="p">(</span><span class="n">copy</span><span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">copy</span><span class="p">,</span> <span class="n">flat</span><span class="p">)))</span>
+        <span class="n">flat</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignore</span><span class="p">,</span> <span class="n">flat</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">flat</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># dump</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">wd</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">sql_file</span> <span class="o">=</span> <span class="n">pj</span><span class="p">(</span><span class="n">wd</span><span class="p">,</span> <span class="s2">&quot;insert_meta.sql&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">sql_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">sql</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;insert ignore into meta (species_id, meta_key, meta_value) values&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sql</span><span class="p">)</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">for</span> <span class="n">_key</span><span class="p">,</span> <span class="n">_val</span> <span class="ow">in</span> <span class="n">flat</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_val</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+                    <span class="n">_val</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">_val</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">_val</span> <span class="o">=</span> <span class="s1">&#39;&quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">_val</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> (1, &quot;</span><span class="si">%s</span><span class="s1">&quot;, </span><span class="si">%s</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">_key</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">_val</span><span class="p">)),</span> <span class="n">file</span><span class="o">=</span><span class="n">sql</span><span class="p">)</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sql</span><span class="p">)</span>
+        <span class="c1"># run insert sql</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_sql_req</span><span class="p">(</span><span class="n">sql_file</span><span class="p">,</span> <span class="n">log_pfx</span><span class="o">=</span><span class="n">sql_file</span><span class="p">,</span> <span class="n">from_file</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="fill_metadata.flattern"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.fill_metadata.fill_metadata.flattern">[docs]</a>    <span class="k">def</span> <span class="nf">flattern</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ignore_lst</span><span class="p">,</span> <span class="n">pfx</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># vectors with values only</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[(</span><span class="n">pfx</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">ignore_lst</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">ignore_lst</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">new_pfx</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">,</span> <span class="p">[</span><span class="n">pfx</span><span class="p">,</span> <span class="n">k</span><span class="p">]))</span>
+                <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flattern</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">ignore_lst</span><span class="p">,</span> <span class="n">new_pfx</span><span class="p">))</span>
+            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">return</span> <span class="n">data</span> <span class="o">!=</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">[(</span><span class="n">pfx</span><span class="p">,</span> <span class="n">data</span><span class="p">)]</span> <span class="ow">or</span> <span class="p">[]</span></div>
+
+<div class="viewcode-block" id="fill_metadata.run_sql_req"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.fill_metadata.fill_metadata.run_sql_req">[docs]</a>    <span class="k">def</span> <span class="nf">run_sql_req</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">log_pfx</span><span class="p">,</span> <span class="n">from_file</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">dirname</span><span class="p">(</span><span class="n">log_pfx</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">sql_option</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot; -sql &#39;</span><span class="si">{_sql}</span><span class="s2">&#39; &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">_sql</span><span class="o">=</span><span class="n">sql</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">from_file</span><span class="p">:</span>
+            <span class="n">sql_option</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot; &lt; &#39;</span><span class="si">{_sql}</span><span class="s2">&#39; &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">_sql</span><span class="o">=</span><span class="n">sql</span><span class="p">)</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;</span><span class="si">{_dbcmd}</span><span class="s2"> -url &quot;</span><span class="si">{_srv}{_dbname}</span><span class="s2">&quot; </span><span class="si">{_sql_option}</span><span class="s2"> &gt; </span><span class="si">{_out}</span><span class="s2"> 2&gt; </span><span class="si">{_err}</span><span class="s2">&quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">_dbcmd</span><span class="o">=</span><span class="s2">&quot;perl </span><span class="si">%s</span><span class="s2">/scripts/db_cmd.pl&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;EHIVE_ROOT_DIR&quot;</span><span class="p">),</span>
+            <span class="n">_srv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;dbsrv_url&quot;</span><span class="p">),</span>
+            <span class="n">_dbname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;db_name&quot;</span><span class="p">),</span>
+            <span class="n">_sql_option</span><span class="o">=</span><span class="n">sql_option</span><span class="p">,</span>
+            <span class="n">_out</span><span class="o">=</span><span class="n">log_pfx</span> <span class="o">+</span> <span class="s2">&quot;.stdout&quot;</span><span class="p">,</span>
+            <span class="n">_err</span><span class="o">=</span><span class="n">log_pfx</span> <span class="o">+</span> <span class="s2">&quot;.stderr&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;running </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cmd</span><span class="p">),</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sp</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="fill_metadata.db_string"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.fill_metadata.fill_metadata.db_string">[docs]</a>    <span class="k">def</span> <span class="nf">db_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;-dbhost </span><span class="si">{host_}</span><span class="s2"> -dbport </span><span class="si">{port_}</span><span class="s2"> -dbuser </span><span class="si">{user_}</span><span class="s2"> -dbpass </span><span class="si">{pass_}</span><span class="s2"> -dbname </span><span class="si">{dbname_}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">host_</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;dbsrv_host&quot;</span><span class="p">),</span>
+            <span class="n">port_</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;dbsrv_port&quot;</span><span class="p">),</span>
+            <span class="n">user_</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;dbsrv_user&quot;</span><span class="p">),</span>
+            <span class="n">pass_</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;dbsrv_pass&quot;</span><span class="p">),</span>
+            <span class="n">dbname_</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;db_name&quot;</span><span class="p">),</span>
+        <span class="p">)</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

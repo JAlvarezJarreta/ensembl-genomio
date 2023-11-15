@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.io.genomio.genome_metadata.extend &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.io.genomio.genome_metadata.extend</h1><div class="highlight"><pre>
+<span></span><span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;Add more metadata to the genome metadata file, including added seq_regions (e.g. MT chromosome).&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;MissingDataError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_additions&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_gbff_regions&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_report_regions_names&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;amend_genomic_metadata&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">PathLike</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">Bio</span> <span class="kn">import</span> <span class="n">SeqIO</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.io.genomio.utils</span> <span class="kn">import</span> <span class="n">get_json</span><span class="p">,</span> <span class="n">open_gz_file</span><span class="p">,</span> <span class="n">print_json</span>
+<span class="kn">from</span> <span class="nn">ensembl.utils.argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
+
+
+<span class="n">_VERSION_END</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\.\d+$&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="MissingDataError"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.extend.MissingDataError">[docs]</a><span class="k">class</span> <span class="nc">MissingDataError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Used if some data is missing from the report file.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report_path</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">,</span> <span class="n">accession</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">report_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Can&#39;t get data for </span><span class="si">{</span><span class="n">accession</span><span class="si">}</span><span class="s2"> in report </span><span class="si">{</span><span class="n">report_path</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="p">:</span>
+            <span class="n">report_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">report_msg</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">msg</span> <span class="o">=</span> <span class="n">report_msg</span></div>
+
+
+<div class="viewcode-block" id="get_additions"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.extend.get_additions">[docs]</a><span class="k">def</span> <span class="nf">get_additions</span><span class="p">(</span><span class="n">report_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">gbff_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns all `seq_regions` that are mentioned in the report but that are not in the data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        report_path: Path to the report file.</span>
+<span class="sd">        gbff_path: Path to the GBFF file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">gbff_regions</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">get_gbff_regions</span><span class="p">(</span><span class="n">gbff_path</span><span class="p">))</span>
+    <span class="n">report_regions</span> <span class="o">=</span> <span class="n">get_report_regions_names</span><span class="p">(</span><span class="n">report_path</span><span class="p">)</span>
+
+    <span class="n">additions</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">rep_seq</span> <span class="ow">in</span> <span class="n">report_regions</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">rs_seq</span><span class="p">,</span> <span class="n">gb_seq</span><span class="p">)</span> <span class="o">=</span> <span class="n">rep_seq</span>
+        <span class="k">if</span> <span class="n">rs_seq</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">gbff_regions</span> <span class="ow">and</span> <span class="n">gb_seq</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">gbff_regions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rs_seq</span><span class="p">:</span>
+                <span class="n">additions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rs_seq</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">additions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gb_seq</span><span class="p">)</span>
+    <span class="n">additions</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">additions</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">additions</span></div>
+
+
+<div class="viewcode-block" id="get_gbff_regions"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.extend.get_gbff_regions">[docs]</a><span class="k">def</span> <span class="nf">get_gbff_regions</span><span class="p">(</span><span class="n">gbff_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the `seq_region` data from the GBFF file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        gbff_path: Gbff file path to use.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">gbff_path</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="n">seq_regions</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="n">open_gz_file</span><span class="p">(</span><span class="n">gbff_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">gbff_file</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">SeqIO</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">gbff_file</span><span class="p">,</span> <span class="s2">&quot;genbank&quot;</span><span class="p">):</span>
+            <span class="n">record_id</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">_VERSION_END</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="n">seq_regions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">seq_regions</span></div>
+
+
+<span class="k">def</span> <span class="nf">_report_to_csv</span><span class="p">(</span><span class="n">report_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns an assembly report as a CSV string, and the head metadata as a dict.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        report_path: Path to a `seq_region` file from INSDC/RefSeq.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">with</span> <span class="n">report_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">report</span><span class="p">:</span>
+        <span class="n">last_head</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">report</span><span class="p">:</span>
+            <span class="c1"># Ignore header</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">):</span>
+                <span class="c1"># Get metadata values if possible</span>
+                <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;# (.+?): (.+?)$&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                    <span class="n">metadata</span><span class="p">[</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">last_head</span> <span class="o">=</span> <span class="n">line</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">last_head</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">+=</span> <span class="n">last_head</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="n">last_head</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">data</span> <span class="o">+=</span> <span class="n">line</span>
+    <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">metadata</span>
+
+
+<div class="viewcode-block" id="get_report_regions_names"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.extend.get_report_regions_names">[docs]</a><span class="k">def</span> <span class="nf">get_report_regions_names</span><span class="p">(</span><span class="n">report_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of `seq_region` names from the report file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        report_path: Path to the seq_regions report from INSDC/RefSeq.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get the report in a CSV format, easier to manipulate</span>
+    <span class="n">report_csv</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_report_to_csv</span><span class="p">(</span><span class="n">report_path</span><span class="p">)</span>
+
+    <span class="c1"># Feed the csv string to the CSV reader</span>
+    <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="n">report_csv</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(),</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">quoting</span><span class="o">=</span><span class="n">csv</span><span class="o">.</span><span class="n">QUOTE_NONE</span><span class="p">)</span>
+
+    <span class="c1"># Create the seq_regions</span>
+    <span class="n">seq_regions</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+        <span class="n">refseq_name</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;RefSeq-Accn&quot;</span><span class="p">]</span>
+        <span class="n">genbank_name</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;GenBank-Accn&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">refseq_name</span> <span class="o">==</span> <span class="s2">&quot;na&quot;</span><span class="p">:</span>
+            <span class="n">refseq_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">genbank_name</span> <span class="o">==</span> <span class="s2">&quot;na&quot;</span><span class="p">:</span>
+            <span class="n">genbank_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">refseq_name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">_VERSION_END</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">refseq_name</span><span class="p">)</span>
+        <span class="n">genbank_name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">_VERSION_END</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">genbank_name</span><span class="p">)</span>
+        <span class="n">seq_regions</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">genbank_name</span><span class="p">,</span> <span class="n">refseq_name</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">seq_regions</span></div>
+
+
+<div class="viewcode-block" id="amend_genomic_metadata"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.genome_metadata.html#ensembl.io.genomio.genome_metadata.extend.amend_genomic_metadata">[docs]</a><span class="k">def</span> <span class="nf">amend_genomic_metadata</span><span class="p">(</span>
+    <span class="n">genome_infile</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">,</span>
+    <span class="n">genome_outfile</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">,</span>
+    <span class="n">report_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">genbank_infile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Args:</span>
+<span class="sd">        genome_infile: Genome data following the schemas/genome_schema.json.</span>
+<span class="sd">        genome_outfile: Amended genome data file.</span>
+<span class="sd">        report_file: INSDC/RefSeq sequences report file.</span>
+<span class="sd">        genbank_infile: INSDC/RefSeq GBFF file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">genome_metadata</span> <span class="o">=</span> <span class="n">get_json</span><span class="p">(</span><span class="n">genome_infile</span><span class="p">)</span>
+
+    <span class="c1"># Get additional sequences in the assembly but not in the data</span>
+    <span class="k">if</span> <span class="n">report_file</span><span class="p">:</span>
+        <span class="n">gbff_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">genbank_infile</span><span class="p">)</span> <span class="k">if</span> <span class="n">genbank_infile</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">additions</span> <span class="o">=</span> <span class="n">get_additions</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">report_file</span><span class="p">),</span> <span class="n">gbff_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">additions</span><span class="p">:</span>
+            <span class="n">genome_metadata</span><span class="p">[</span><span class="s2">&quot;added_seq&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;region_name&quot;</span><span class="p">:</span> <span class="n">additions</span><span class="p">}</span>
+
+    <span class="c1"># Print out the file</span>
+    <span class="n">genome_outfile</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">genome_outfile</span><span class="p">)</span>
+    <span class="n">print_json</span><span class="p">(</span><span class="n">genome_outfile</span><span class="p">,</span> <span class="n">genome_metadata</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Module&#39;s entry-point.&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Update genome metadata file to include additional sequence regions (e.g. MT chromosome).&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_src_path</span><span class="p">(</span>
+        <span class="s2">&quot;--genome_infile&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Input genome file (following the schemas/genome_schema.json)&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_dst_path</span><span class="p">(</span>
+        <span class="s2">&quot;--genome_outfile&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the new amended genome metadata file&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_src_path</span><span class="p">(</span><span class="s2">&quot;--report_file&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;INSDC/RefSeq sequences report file&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_src_path</span><span class="p">(</span><span class="s2">&quot;--genbank_infile&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;INSDC/RefSeq GBFF file&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">amend_genomic_metadata</span><span class="p">(</span><span class="o">**</span><span class="nb">vars</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

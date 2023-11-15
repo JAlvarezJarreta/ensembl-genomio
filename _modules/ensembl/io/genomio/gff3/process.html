@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.io.genomio.gff3.process &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.io.genomio.gff3.process</h1><div class="highlight"><pre>
+<span></span><span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;Standardize the gene model representation of a GFF3 file, and extract the functional annotation</span>
+<span class="sd">in a separate file.&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;Records&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GFFParserError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GFFGeneMerger&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GFFSimplifier&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">PathLike</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">BCBio</span> <span class="kn">import</span> <span class="n">GFF</span>
+<span class="kn">from</span> <span class="nn">Bio.SeqRecord</span> <span class="kn">import</span> <span class="n">SeqRecord</span>
+<span class="kn">from</span> <span class="nn">Bio.SeqFeature</span> <span class="kn">import</span> <span class="n">SeqFeature</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.io.genomio.gff3.extract_annotation</span> <span class="kn">import</span> <span class="n">FunctionalAnnotations</span>
+<span class="kn">from</span> <span class="nn">ensembl.utils.argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
+
+
+<div class="viewcode-block" id="Records"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.Records">[docs]</a><span class="k">class</span> <span class="nc">Records</span><span class="p">(</span><span class="nb">list</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List of GFF3 SeqRecords.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Records.to_gff"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.Records.to_gff">[docs]</a>    <span class="k">def</span> <span class="nf">to_gff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out_gff_path</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Print out the current list of records in a GFF3 file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            out_gff_path: Path to GFF3 file where to write the records.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">Path</span><span class="p">(</span><span class="n">out_gff_path</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_gff_fh</span><span class="p">:</span>
+            <span class="n">GFF</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out_gff_fh</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="GFFParserError"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFParserError">[docs]</a><span class="k">class</span> <span class="nc">GFFParserError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error when parsing a GFF3 file.&quot;&quot;&quot;</span></div>
+
+
+<span class="k">class</span> <span class="nc">GFFParserCommon</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Heritable class to share the list of feature types supported or ignored by the parser&quot;&quot;&quot;</span>
+
+    <span class="c1"># Supported gene level biotypes</span>
+    <span class="n">gene_types</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;gene&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;pseudogene&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ncRNA_gene&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Exception: non_gene_types that are nonetheless kept in the GFF3 file</span>
+    <span class="n">non_gene_types</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;transposable_element&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Supported transcript level biotypes</span>
+    <span class="n">transcript_types</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;C_gene_segment&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;guide_RNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;lnc_RNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;miRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;misc_RNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;mRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ncRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;piRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;pseudogenic_rRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;pseudogenic_transcript&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;pseudogenic_tRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ribozyme&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;RNase_MRP_RNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;RNase_P_RNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;rRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;scRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;snoRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;snRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;SRP_RNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;telomerase_RNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;transcript&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;tRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;V_gene_segment&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Biotypes that are ignored, and removed from the final GFF3 file</span>
+    <span class="n">ignored_gene_types</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;cDNA_match&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;centromere&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;D_loop&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;direct_repeat&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;dispersed_repeat&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;gap&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;intron&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;inverted_repeat&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;long_terminal_repeat&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;microsatellite&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;origin_of_replication&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;region&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;repeat_region&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;satellite_DNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;sequence_feature&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;sequence_secondary_structure&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;sequence_uncertainty&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;STS&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;tandem_repeat&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;telomere&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;terminal%2Cinverted&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Ignored biotypes that are under a gene parent feature</span>
+    <span class="n">ignored_transcript_types</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;3&#39;UTR&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5&#39;UTR&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;antisense_RNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;intron&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;non_canonical_five_prime_splice_site&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;non_canonical_three_prime_splice_site&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+
+<div class="viewcode-block" id="GFFGeneMerger"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFGeneMerger">[docs]</a><span class="k">class</span> <span class="nc">GFFGeneMerger</span><span class="p">(</span><span class="n">GFFParserCommon</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Specialized class to merge split genes in a GFF3 file, prior to further parsing.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="GFFGeneMerger.merge"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFGeneMerger.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_gff_path</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">,</span> <span class="n">out_gff_path</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Merge genes in a gff that are split in multiple lines</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">to_merge</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">merged</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">with</span> <span class="n">Path</span><span class="p">(</span><span class="n">in_gff_path</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">in_gff_fh</span><span class="p">,</span> <span class="n">Path</span><span class="p">(</span><span class="n">out_gff_path</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_gff_fh</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">in_gff_fh</span><span class="p">:</span>
+                <span class="c1"># Skip comments</span>
+                <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">):</span>
+                    <span class="n">out_gff_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Parse one line</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span>
+                    <span class="n">fields</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">attr_fields</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)</span>
+                    <span class="n">attrs</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">attr_fields</span><span class="p">:</span>
+                        <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="p">)</span>
+                        <span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+                    <span class="c1"># Check this is a gene to merge; cache it then</span>
+                    <span class="k">if</span> <span class="n">fields</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">gene_types</span> <span class="ow">and</span> <span class="p">(</span><span class="s2">&quot;part&quot;</span> <span class="ow">in</span> <span class="n">attrs</span> <span class="ow">or</span> <span class="s2">&quot;is_ordered&quot;</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">):</span>
+                        <span class="n">to_merge</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span>
+
+                    <span class="c1"># If not, merge previous gene if needed, and print the line</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">to_merge</span><span class="p">:</span>
+                            <span class="n">merged_str</span> <span class="o">=</span> <span class="p">[]</span>
+                            <span class="k">for</span> <span class="n">line_to_merge</span> <span class="ow">in</span> <span class="n">to_merge</span><span class="p">:</span>
+                                <span class="n">merged_str</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line_to_merge</span><span class="p">))</span>
+                            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">merged_str</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                            <span class="n">new_line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_genes</span><span class="p">(</span><span class="n">to_merge</span><span class="p">)</span>
+                            <span class="n">out_gff_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">new_line</span><span class="p">)</span>
+                            <span class="n">to_merge</span> <span class="o">=</span> <span class="p">[]</span>
+                        <span class="n">out_gff_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Print last merged gene if there is one</span>
+            <span class="k">if</span> <span class="n">to_merge</span><span class="p">:</span>
+                <span class="n">merged_str</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">line_to_merge</span> <span class="ow">in</span> <span class="n">to_merge</span><span class="p">:</span>
+                    <span class="n">merged_str</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line_to_merge</span><span class="p">))</span>
+                <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">merged_str</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="n">new_line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_genes</span><span class="p">(</span><span class="n">to_merge</span><span class="p">)</span>
+                <span class="n">out_gff_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">new_line</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">merged</span></div>
+
+    <span class="k">def</span> <span class="nf">_merge_genes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_merge</span><span class="p">:</span> <span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a single gene gff3 line merged from separate parts.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            to_merge: List of gff3 lines with gene parts.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Merge gene in </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">to_merge</span><span class="p">)</span><span class="si">}</span><span class="s2"> parts&quot;</span><span class="p">)</span>
+        <span class="n">min_start</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">max_end</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">for</span> <span class="n">gene</span> <span class="ow">in</span> <span class="n">to_merge</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Merge part: </span><span class="si">{</span><span class="n">gene</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">gene</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">gene</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="n">min_start</span> <span class="ow">or</span> <span class="n">min_start</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">min_start</span> <span class="o">=</span> <span class="n">start</span>
+            <span class="k">if</span> <span class="n">end</span> <span class="o">&gt;</span> <span class="n">max_end</span> <span class="ow">or</span> <span class="n">max_end</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">max_end</span> <span class="o">=</span> <span class="n">end</span>
+
+        <span class="c1"># Take the first line as template and replace things</span>
+        <span class="n">new_gene</span> <span class="o">=</span> <span class="n">to_merge</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">new_gene</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">min_start</span><span class="p">)</span>
+        <span class="n">new_gene</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_end</span><span class="p">)</span>
+
+        <span class="n">attrs</span> <span class="o">=</span> <span class="n">new_gene</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
+        <span class="n">attrs</span> <span class="o">=</span> <span class="n">attrs</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;;is_ordered=true&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">attrs</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;;part=\d+/\d+&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">attrs</span><span class="p">)</span>
+        <span class="n">new_gene</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="n">attrs</span>
+
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">new_gene</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="GFFSimplifier"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier">[docs]</a><span class="k">class</span> <span class="nc">GFFSimplifier</span><span class="p">(</span><span class="n">GFFParserCommon</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a GGF3 file and output a cleaned up GFF3 + annotation json file.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        GFFParserError: If an error cannot be automatically fixed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Multiple parameters to automate various fixes</span>
+    <span class="n">skip_unrecognized</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">gene_cds_skip_others</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">allow_pseudogene_with_CDS</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">exclude_seq_regions</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">validate_gene_id</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">min_id_length</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">stable_id_prefix</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">current_stable_id_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">genome_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">make_missing_stable_ids</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">records</span> <span class="o">=</span> <span class="n">Records</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span> <span class="o">=</span> <span class="n">FunctionalAnnotations</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">genome</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">genome_path</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">Path</span><span class="p">(</span><span class="n">genome_path</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">genome_fh</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">genome</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">genome_fh</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">make_missing_stable_ids</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">make_missing_stable_ids</span>
+
+<div class="viewcode-block" id="GFFSimplifier.simpler_gff3"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.simpler_gff3">[docs]</a>    <span class="k">def</span> <span class="nf">simpler_gff3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_gff_path</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load a GFF3 from INSDC and rewrite it in a simpler version,</span>
+<span class="sd">        and also write a functional_annotation file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">allowed_gene_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gene_types</span>
+        <span class="n">ignored_gene_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignored_gene_types</span>
+        <span class="n">transcript_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transcript_types</span>
+        <span class="n">allowed_non_gene_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">non_gene_types</span>
+        <span class="n">skip_unrecognized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_unrecognized</span>
+        <span class="n">to_exclude</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclude_seq_regions</span>
+
+        <span class="k">with</span> <span class="n">Path</span><span class="p">(</span><span class="n">in_gff_path</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">in_gff_fh</span><span class="p">:</span>
+            <span class="n">fail_types</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">GFF</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">in_gff_fh</span><span class="p">):</span>
+                <span class="n">new_record</span> <span class="o">=</span> <span class="n">SeqRecord</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">seq</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">to_exclude</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skip seq_region </span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># Root features (usually genes)</span>
+                <span class="k">for</span> <span class="n">feat</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+                    <span class="c1"># Skip or format depending on the feature type</span>
+                    <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="n">ignored_gene_types</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="n">transcript_types</span><span class="p">:</span>
+                        <span class="n">feat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transcript_gene</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;CDS&quot;</span><span class="p">:</span>
+                        <span class="n">feat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cds_gene</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;mobile_genetic_element&quot;</span><span class="p">,</span> <span class="s2">&quot;transposable_element&quot;</span><span class="p">):</span>
+                        <span class="n">feat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_mobile_element</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
+
+                    <span class="c1"># Normalize the gene structure</span>
+                    <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="n">allowed_gene_types</span><span class="p">:</span>
+                        <span class="n">feat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize_gene</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="n">fail_types</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="n">allowed_non_gene_types</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">fail_types</span><span class="p">[</span><span class="s2">&quot;gene=&quot;</span> <span class="o">+</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Unsupported feature type: </span><span class="si">{</span><span class="n">feat</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2"> (for </span><span class="si">{</span><span class="n">feat</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">)&quot;</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">skip_unrecognized</span><span class="p">:</span>
+                            <span class="k">del</span> <span class="n">feat</span>
+                            <span class="k">continue</span>
+
+                    <span class="n">new_record</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_record</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">fail_types</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">skip_unrecognized</span><span class="p">:</span>
+                <span class="n">fail_errors</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">   &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fail_types</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="k">raise</span> <span class="n">GFFParserError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unrecognized types found:</span><span class="se">\n</span><span class="s2">   </span><span class="si">{</span><span class="n">fail_errors</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.format_mobile_element"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.format_mobile_element">[docs]</a>    <span class="k">def</span> <span class="nf">format_mobile_element</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feat</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a mobile_genetic_element feature, transform it into a transposable_element&quot;&quot;&quot;</span>
+
+        <span class="c1"># Change mobile_genetic_element into a transposable_element feature</span>
+        <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;mobile_genetic_element&quot;</span><span class="p">:</span>
+            <span class="n">mobile_element_type</span> <span class="o">=</span> <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mobile_element_type&quot;</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="k">if</span> <span class="n">mobile_element_type</span><span class="p">:</span>
+                <span class="c1"># Get the type (and name) from the attrib</span>
+                <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">mobile_element_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">element_type</span><span class="p">,</span> <span class="n">element_name</span> <span class="o">=</span> <span class="n">mobile_element_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+                    <span class="n">description</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">element_type</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">element_name</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">element_type</span> <span class="o">=</span> <span class="n">mobile_element_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">description</span> <span class="o">=</span> <span class="n">element_type</span>
+
+                <span class="c1"># Keep the metadata in the description if the type is known</span>
+                <span class="k">if</span> <span class="n">element_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;transposon&quot;</span><span class="p">,</span> <span class="s2">&quot;retrotransposon&quot;</span><span class="p">):</span>
+                    <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="s2">&quot;transposable_element&quot;</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;product&quot;</span><span class="p">):</span>
+                        <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;product&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">description</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mobile genetic element &#39;mobile_element_type&#39; is not transposon: </span><span class="si">{</span><span class="n">element_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">feat</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mobile genetic element does not have a &#39;mobile_element_type&#39; tag&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">feat</span>
+        <span class="k">elif</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;transposable_element&quot;</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Feature </span><span class="si">{</span><span class="n">feat</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> is not a supported TE feature </span><span class="si">{</span><span class="n">feat</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">feat</span>
+
+        <span class="c1"># Generate ID if needed and add it to the functional annotation</span>
+        <span class="n">feat</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize_gene_id</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="s2">&quot;transposable_element&quot;</span><span class="p">)</span>
+        <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="n">feat</span><span class="o">.</span><span class="n">id</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">feat</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.format_gene_segments"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.format_gene_segments">[docs]</a>    <span class="k">def</span> <span class="nf">format_gene_segments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transcript</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the equivalent Ensembl biotype feature for gene segment transcript features.</span>
+
+<span class="sd">        Supported features: &quot;C_gene_segment&quot; and &quot;V_gene_segment&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            transcript: Gene segment transcript feature.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Change V/C_gene_segment into a its corresponding transcript names</span>
+        <span class="k">if</span> <span class="n">transcript</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;C_gene_segment&quot;</span><span class="p">,</span> <span class="s2">&quot;V_gene_segment&quot;</span><span class="p">):</span>
+            <span class="n">standard_name</span> <span class="o">=</span> <span class="n">transcript</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;standard_name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">biotype</span> <span class="o">=</span> <span class="n">transcript</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_segment&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\b(immunoglobulin|ig)\b&quot;</span><span class="p">,</span> <span class="n">standard_name</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span>
+                <span class="n">biotype</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;IG_</span><span class="si">{</span><span class="n">biotype</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bt[- _]cell\b&quot;</span><span class="p">,</span> <span class="n">standard_name</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span>
+                <span class="n">biotype</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;TR_</span><span class="si">{</span><span class="n">biotype</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unexpected &#39;standard_name&#39; content for feature </span><span class="si">{</span><span class="n">transcript</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">standard_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">transcript</span>
+            <span class="n">transcript</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">biotype</span>
+        <span class="k">return</span> <span class="n">transcript</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.normalize_gene"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_gene">[docs]</a>    <span class="k">def</span> <span class="nf">normalize_gene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">,</span> <span class="n">fail_types</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a normalized gene structure, separate from the functional elements.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            gene: Gene object to normalize.</span>
+<span class="sd">            functional_annotation: List of feature annotations (appended by this method).</span>
+<span class="sd">            fail_types: List of feature types that are not supported (appended by this method).</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># New gene ID</span>
+        <span class="n">gene</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize_gene_id</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span>
+
+        <span class="c1"># Gene with no subfeatures: need to create a transcript at least</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Insert transcript for lone gene </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">transcript</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transcript_for_gene</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span>
+            <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">transcript</span><span class="p">]</span>
+
+        <span class="c1"># Count features</span>
+        <span class="n">fcounter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">([</span><span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">feat</span> <span class="ow">in</span> <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="p">])</span>
+
+        <span class="c1"># Transform gene - CDS to gene-transcript-exon-CDS</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fcounter</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">fcounter</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;CDS&quot;</span><span class="p">):</span>
+                <span class="n">num_subs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Insert transcript-exon feats for </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">num_subs</span><span class="si">}</span><span class="s2"> CDSs)&quot;</span><span class="p">)</span>
+                <span class="n">transcripts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gene_to_cds</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span>
+                <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="n">transcripts</span>
+
+            <span class="c1"># Transform gene - exon to gene-transcript-exon</span>
+            <span class="k">elif</span> <span class="n">fcounter</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exon&quot;</span><span class="p">):</span>
+                <span class="n">num_subs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Insert transcript for </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">num_subs</span><span class="si">}</span><span class="s2"> exons)&quot;</span><span class="p">)</span>
+                <span class="n">transcript</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gene_to_exon</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span>
+                <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">transcript</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Check that we don&#39;t mix</span>
+            <span class="k">if</span> <span class="n">fcounter</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mRNA&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">fcounter</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;CDS&quot;</span><span class="p">):</span>
+                <span class="c1"># Move CDS(s) from parent gene to parent mRNA if needed</span>
+                <span class="n">gene</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">move_cds_to_mrna</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fcounter</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mRNA&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">fcounter</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exon&quot;</span><span class="p">):</span>
+                <span class="c1"># Special case with extra exons</span>
+                <span class="n">gene</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clean_extra_exons</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span>
+
+        <span class="c1"># Remove CDS from pseudogenes</span>
+        <span class="k">if</span> <span class="n">gene</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;pseudogene&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_pseudogene_with_CDS</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remove_cds_from_pseudogene</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span>
+
+        <span class="c1"># TRANSCRIPTS</span>
+        <span class="n">gene</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_transcripts</span><span class="p">(</span><span class="n">gene</span><span class="p">,</span> <span class="n">fail_types</span><span class="p">)</span>
+
+        <span class="c1"># PSEUDOGENE CDS IDs</span>
+        <span class="k">if</span> <span class="n">gene</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;pseudogene&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_pseudogene_with_CDS</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">normalize_pseudogene_cds</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span>
+
+        <span class="c1"># Finally, store gene functional annotation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="n">gene</span><span class="p">,</span> <span class="s2">&quot;gene&quot;</span><span class="p">)</span>
+
+        <span class="c1"># replace qualifiers</span>
+        <span class="n">old_gene_qualifiers</span> <span class="o">=</span> <span class="n">gene</span><span class="o">.</span><span class="n">qualifiers</span>
+        <span class="n">gene</span><span class="o">.</span><span class="n">qualifiers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">old_gene_qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]}</span>
+
+        <span class="k">return</span> <span class="n">gene</span></div>
+
+    <span class="k">def</span> <span class="nf">_normalize_transcripts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">,</span> <span class="n">fail_types</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a normalized transcript.&quot;&quot;&quot;</span>
+        <span class="n">allowed_transcript_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transcript_types</span>
+        <span class="n">skip_unrecognized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_unrecognized</span>
+
+        <span class="n">transcripts_to_delete</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">count</span><span class="p">,</span> <span class="n">transcript</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">transcript</span><span class="o">.</span><span class="n">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed_transcript_types</span>
+                <span class="ow">and</span> <span class="n">transcript</span><span class="o">.</span><span class="n">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignored_transcript_types</span>
+            <span class="p">):</span>
+                <span class="n">fail_types</span><span class="p">[</span><span class="s2">&quot;transcript=&quot;</span> <span class="o">+</span> <span class="n">transcript</span><span class="o">.</span><span class="n">type</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Unrecognized transcript type: </span><span class="si">{</span><span class="n">transcript</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">&quot;</span> <span class="sa">f</span><span class="s2">&quot; for </span><span class="si">{</span><span class="n">transcript</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">skip_unrecognized</span><span class="p">:</span>
+                    <span class="n">transcripts_to_delete</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+            <span class="c1"># New transcript ID</span>
+            <span class="n">transcript_number</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">transcript</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize_transcript_id</span><span class="p">(</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">transcript_number</span><span class="p">)</span>
+
+            <span class="n">transcript</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_gene_segments</span><span class="p">(</span><span class="n">transcript</span><span class="p">)</span>
+
+            <span class="c1"># Store transcript functional annotation</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="n">transcript</span><span class="p">,</span> <span class="s2">&quot;transcript&quot;</span><span class="p">,</span> <span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+            <span class="c1"># Replace qualifiers</span>
+            <span class="n">old_transcript_qualifiers</span> <span class="o">=</span> <span class="n">transcript</span><span class="o">.</span><span class="n">qualifiers</span>
+            <span class="n">transcript</span><span class="o">.</span><span class="n">qualifiers</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="n">transcript</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="s2">&quot;Parent&quot;</span><span class="p">:</span> <span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="s2">&quot;source&quot;</span> <span class="ow">in</span> <span class="n">old_transcript_qualifiers</span><span class="p">:</span>
+                <span class="n">transcript</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">old_transcript_qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+
+            <span class="c1"># EXONS AND CDS</span>
+            <span class="n">transcript</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_transcript_subfeatures</span><span class="p">(</span><span class="n">gene</span><span class="p">,</span> <span class="n">transcript</span><span class="p">,</span> <span class="n">fail_types</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">transcripts_to_delete</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">elt</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">transcripts_to_delete</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">elt</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">gene</span>
+
+    <span class="k">def</span> <span class="nf">_normalize_transcript_subfeatures</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">,</span> <span class="n">transcript</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">,</span> <span class="n">fail_types</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a transcript with normalized sub-features.&quot;&quot;&quot;</span>
+        <span class="n">ignored_transcript_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignored_transcript_types</span>
+        <span class="n">cds_found</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">exons_to_delete</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tcount</span><span class="p">,</span> <span class="n">feat</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">transcript</span><span class="o">.</span><span class="n">sub_features</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;exon&quot;</span><span class="p">:</span>
+                <span class="c1"># Replace qualifiers</span>
+                <span class="n">old_exon_qualifiers</span> <span class="o">=</span> <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span>
+                <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Parent&quot;</span><span class="p">:</span> <span class="n">transcript</span><span class="o">.</span><span class="n">id</span><span class="p">}</span>
+                <span class="k">if</span> <span class="s2">&quot;source&quot;</span> <span class="ow">in</span> <span class="n">old_exon_qualifiers</span><span class="p">:</span>
+                    <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">old_exon_qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;CDS&quot;</span><span class="p">:</span>
+                <span class="c1"># New CDS ID</span>
+                <span class="n">feat</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize_cds_id</span><span class="p">(</span><span class="n">feat</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">transcript</span><span class="o">.</span><span class="n">id</span><span class="p">):</span>
+                    <span class="n">feat</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">transcript</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">_cds&quot;</span>
+
+                <span class="c1"># Store CDS functional annotation (only once)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">cds_found</span><span class="p">:</span>
+                    <span class="n">cds_found</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="s2">&quot;translation&quot;</span><span class="p">,</span> <span class="n">transcript</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+                <span class="c1"># Replace qualifiers</span>
+                <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="n">feat</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                    <span class="s2">&quot;Parent&quot;</span><span class="p">:</span> <span class="n">transcript</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                    <span class="s2">&quot;phase&quot;</span><span class="p">:</span> <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;phase&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">],</span>
+                <span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="n">ignored_transcript_types</span><span class="p">:</span>
+                    <span class="n">exons_to_delete</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tcount</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="n">fail_types</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;sub_transcript=</span><span class="si">{</span><span class="n">feat</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Unrecognized exon type for </span><span class="si">{</span><span class="n">feat</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">feat</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; (for transcript </span><span class="si">{</span><span class="n">transcript</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> of type </span><span class="si">{</span><span class="n">transcript</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_unrecognized</span><span class="p">:</span>
+                    <span class="n">exons_to_delete</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tcount</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">exons_to_delete</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">elt</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">exons_to_delete</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                <span class="n">transcript</span><span class="o">.</span><span class="n">sub_features</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">elt</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">transcript</span>
+
+<div class="viewcode-block" id="GFFSimplifier.transcript_gene"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.transcript_gene">[docs]</a>    <span class="k">def</span> <span class="nf">transcript_gene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ncrna</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a gene for lone transcripts: &#39;gene&#39; for tRNA/rRNA, and &#39;ncRNA&#39; for all others</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ncrna: the transcript for which we want to create a gene.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The gene that contains the transcript.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_type</span> <span class="o">=</span> <span class="s2">&quot;ncRNA_gene&quot;</span>
+        <span class="k">if</span> <span class="n">ncrna</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;tRNA&quot;</span><span class="p">,</span> <span class="s2">&quot;rRNA&quot;</span><span class="p">):</span>
+            <span class="n">new_type</span> <span class="o">=</span> <span class="s2">&quot;gene&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Put the transcript </span><span class="si">{</span><span class="n">ncrna</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2"> in a </span><span class="si">{</span><span class="n">new_type</span><span class="si">}</span><span class="s2"> parent feature&quot;</span><span class="p">)</span>
+        <span class="n">gene</span> <span class="o">=</span> <span class="n">SeqFeature</span><span class="p">(</span><span class="n">ncrna</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">new_type</span><span class="p">)</span>
+        <span class="n">gene</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ncrna</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+        <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">ncrna</span><span class="p">]</span>
+        <span class="n">gene</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">ncrna</span><span class="o">.</span><span class="n">id</span>
+
+        <span class="k">return</span> <span class="n">gene</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.cds_gene"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.cds_gene">[docs]</a>    <span class="k">def</span> <span class="nf">cds_gene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cds</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a gene created for a lone CDS.&quot;&quot;&quot;</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Put the lone CDS in gene-mRNA parent features&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Create a transcript, add the CDS</span>
+        <span class="n">transcript</span> <span class="o">=</span> <span class="n">SeqFeature</span><span class="p">(</span><span class="n">cds</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;mRNA&quot;</span><span class="p">)</span>
+        <span class="n">transcript</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cds</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+        <span class="n">transcript</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">cds</span><span class="p">]</span>
+
+        <span class="c1"># Add an exon too</span>
+        <span class="n">exon</span> <span class="o">=</span> <span class="n">SeqFeature</span><span class="p">(</span><span class="n">cds</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;exon&quot;</span><span class="p">)</span>
+        <span class="n">exon</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cds</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+        <span class="n">transcript</span><span class="o">.</span><span class="n">sub_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">exon</span><span class="p">)</span>
+
+        <span class="c1"># Create a gene, add the transcript</span>
+        <span class="n">gene_type</span> <span class="o">=</span> <span class="s2">&quot;gene&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;pseudo&quot;</span> <span class="ow">in</span> <span class="n">cds</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cds</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;pseudo&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span><span class="p">):</span>
+            <span class="n">gene_type</span> <span class="o">=</span> <span class="s2">&quot;pseudogene&quot;</span>
+        <span class="n">gene</span> <span class="o">=</span> <span class="n">SeqFeature</span><span class="p">(</span><span class="n">cds</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">gene_type</span><span class="p">)</span>
+        <span class="n">gene</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cds</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+        <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">transcript</span><span class="p">]</span>
+        <span class="n">gene</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_stable_id</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">gene</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.transcript_for_gene"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.transcript_for_gene">[docs]</a>    <span class="k">def</span> <span class="nf">transcript_for_gene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a transcript, from a gene without one.&quot;&quot;&quot;</span>
+
+        <span class="n">transcript</span> <span class="o">=</span> <span class="n">SeqFeature</span><span class="p">(</span><span class="n">gene</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;transcript&quot;</span><span class="p">)</span>
+        <span class="n">transcript</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gene</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+        <span class="n">transcript</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">return</span> <span class="n">transcript</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.gene_to_cds"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.gene_to_cds">[docs]</a>    <span class="k">def</span> <span class="nf">gene_to_cds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">SeqFeature</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a list of transcripts (with exons), from a gene with only CDS children.&quot;&quot;&quot;</span>
+
+        <span class="n">gene_cds_skip_others</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gene_cds_skip_others</span>
+        <span class="n">transcripts_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">del_transcript</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">count</span><span class="p">,</span> <span class="n">cds</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">cds</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="s2">&quot;CDS&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">gene_cds_skip_others</span><span class="p">:</span>
+                    <span class="n">del_transcript</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="k">raise</span> <span class="n">GFFParserError</span><span class="p">(</span>
+                    <span class="s2">&quot;Can not create a chain &#39;transcript - exon - CDS&#39;&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; when the gene children are not all CDSs&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; (</span><span class="si">{</span><span class="n">cds</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> of type </span><span class="si">{</span><span class="n">cds</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2"> is child of gene </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="p">)</span>
+
+            <span class="n">exon</span> <span class="o">=</span> <span class="n">SeqFeature</span><span class="p">(</span><span class="n">cds</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;exon&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Add to transcript or create a new one</span>
+            <span class="k">if</span> <span class="n">cds</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">transcripts_dict</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Create new mRNA for </span><span class="si">{</span><span class="n">cds</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">transcript</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_transcript</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span>
+                <span class="n">transcripts_dict</span><span class="p">[</span><span class="n">cds</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">transcript</span>
+            <span class="n">exon</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gene</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+            <span class="n">transcripts_dict</span><span class="p">[</span><span class="n">cds</span><span class="o">.</span><span class="n">id</span><span class="p">]</span><span class="o">.</span><span class="n">sub_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">exon</span><span class="p">)</span>
+            <span class="n">transcripts_dict</span><span class="p">[</span><span class="n">cds</span><span class="o">.</span><span class="n">id</span><span class="p">]</span><span class="o">.</span><span class="n">sub_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cds</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">elt</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">del_transcript</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">elt</span><span class="p">)</span>
+
+        <span class="n">transcripts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">transcripts_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="n">transcripts</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.build_transcript"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.build_transcript">[docs]</a>    <span class="k">def</span> <span class="nf">build_transcript</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a transcript with same metadata as the gene provided.&quot;&quot;&quot;</span>
+
+        <span class="n">transcript</span> <span class="o">=</span> <span class="n">SeqFeature</span><span class="p">(</span><span class="n">gene</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;mRNA&quot;</span><span class="p">)</span>
+        <span class="n">transcript</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gene</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+        <span class="n">transcript</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="n">transcript</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.move_cds_to_mrna"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.move_cds_to_mrna">[docs]</a>    <span class="k">def</span> <span class="nf">move_cds_to_mrna</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Move CDS child features of a gene, to the mRNA.</span>
+
+<span class="sd">        This is to fix the case where we have the following structure:</span>
+<span class="sd">        gene -&gt; [ mRNA, CDSs ]</span>
+<span class="sd">        and change it to</span>
+<span class="sd">        gene -&gt; [ mRNA -&gt; [ CDSs ] ]</span>
+<span class="sd">        The mRNA might have exons, in which case check that they match the CDS coordinates.</span>
+
+<span class="sd">        Raises an exception if the feature structure is not recognized.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            A gene with only one transcript, to check and fix.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The gene where the CDSs have been moved, if needed.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># First, count the types</span>
+        <span class="n">mrnas</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">cdss</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">gene_subf_clean</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">subf</span> <span class="ow">in</span> <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">subf</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;mRNA&quot;</span><span class="p">:</span>
+                <span class="n">mrnas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subf</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">subf</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;CDS&quot;</span><span class="p">:</span>
+                <span class="n">cdss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subf</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">gene_subf_clean</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subf</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cdss</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Nothing to fix here, no CDSs to move</span>
+            <span class="k">return</span> <span class="n">gene</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mrnas</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GFFParserError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Can&#39;t fix gene </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">: contains several mRNAs and CDSs, all children of the gene&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">mrna</span> <span class="o">=</span> <span class="n">mrnas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Check if there are exons (or CDSs) under the mRNA</span>
+        <span class="n">sub_exons</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">sub_cdss</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">subf</span> <span class="ow">in</span> <span class="n">mrna</span><span class="o">.</span><span class="n">sub_features</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">subf</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;CDS&quot;</span><span class="p">:</span>
+                <span class="n">sub_cdss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subf</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">subf</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;exon&quot;</span><span class="p">:</span>
+                <span class="n">sub_exons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subf</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_sub_cdss</span><span class="p">(</span><span class="n">gene</span><span class="p">,</span> <span class="n">sub_cdss</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_sub_exons</span><span class="p">(</span><span class="n">gene</span><span class="p">,</span> <span class="n">cdss</span><span class="p">,</span> <span class="n">sub_exons</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Gene </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">: move </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cdss</span><span class="p">)</span><span class="si">}</span><span class="s2"> CDSs to the mRNA&quot;</span><span class="p">)</span>
+        <span class="c1"># No more issues? move the CDSs</span>
+        <span class="n">mrna</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">+=</span> <span class="n">cdss</span>
+        <span class="c1"># And remove them from the gene</span>
+        <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="n">gene_subf_clean</span>
+        <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mrna</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">gene</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_check_sub_cdss</span><span class="p">(</span><span class="n">gene</span><span class="p">,</span> <span class="n">sub_cdss</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sub_cdss</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GFFParserError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Gene </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> has CDSs as children of the gene and mRNA&quot;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_check_sub_exons</span><span class="p">(</span><span class="n">gene</span><span class="p">,</span> <span class="n">cdss</span><span class="p">,</span> <span class="n">sub_exons</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check that the exons of the mRNA and the CDSs match&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sub_exons</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Check that they match the CDS outside</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sub_exons</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">cdss</span><span class="p">):</span>
+                <span class="c1"># Now that all coordinates are the same</span>
+                <span class="n">coord_exons</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">exon</span><span class="o">.</span><span class="n">location</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">exon</span> <span class="ow">in</span> <span class="n">sub_exons</span><span class="p">]</span>
+                <span class="n">coord_cdss</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cds</span><span class="o">.</span><span class="n">location</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">cds</span> <span class="ow">in</span> <span class="n">cdss</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">coord_exons</span> <span class="o">!=</span> <span class="n">coord_cdss</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">GFFParserError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Gene </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> CDSs and exons under the mRNA do not match&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">GFFParserError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Gene </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> CDSs and exons under the mRNA do not match (different count)&quot;</span>
+                <span class="p">)</span>
+
+<div class="viewcode-block" id="GFFSimplifier.clean_extra_exons"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.clean_extra_exons">[docs]</a>    <span class="k">def</span> <span class="nf">clean_extra_exons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove extra exons, already existing in the mRNA.</span>
+
+<span class="sd">        This is a special case where a gene contains proper mRNAs, etc. but also</span>
+<span class="sd">        extra exons for the same features. Those exons usually have an ID starting with</span>
+<span class="sd">        &quot;id-&quot;, so that&#39;s what we use to detect them.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">exons</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">mrnas</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">others</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">subf</span> <span class="ow">in</span> <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">subf</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;exon&quot;</span><span class="p">:</span>
+                <span class="n">exons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subf</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">subf</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;mRNA&quot;</span><span class="p">:</span>
+                <span class="n">mrnas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subf</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">others</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subf</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">exons</span> <span class="ow">and</span> <span class="n">mrnas</span><span class="p">:</span>
+            <span class="n">exon_has_id</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c1"># Check if the exon ids start with &quot;id-&quot;, which is an indication that they do not belong here</span>
+            <span class="k">for</span> <span class="n">exon</span> <span class="ow">in</span> <span class="n">exons</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">exon</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;id-&quot;</span><span class="p">):</span>
+                    <span class="n">exon_has_id</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">exon_has_id</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">exon_has_id</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">exons</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Remove </span><span class="si">{</span><span class="n">exon_has_id</span><span class="si">}</span><span class="s2"> extra exons from </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="n">mrnas</span>
+                    <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">+=</span> <span class="n">others</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">GFFParserError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Can&#39;t remove extra exons for </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">, not all start with &#39;id-&#39;&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">gene</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.gene_to_exon"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.gene_to_exon">[docs]</a>    <span class="k">def</span> <span class="nf">gene_to_exon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeqFeature</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns an intermediary transcript for a gene with direct exon children.&quot;&quot;&quot;</span>
+
+        <span class="n">transcript</span> <span class="o">=</span> <span class="n">SeqFeature</span><span class="p">(</span><span class="n">gene</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;mRNA&quot;</span><span class="p">)</span>
+        <span class="n">transcript</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gene</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+        <span class="n">transcript</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">exon</span> <span class="ow">in</span> <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="p">:</span>
+            <span class="n">transcript</span><span class="o">.</span><span class="n">sub_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">exon</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">transcript</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.normalize_gene_id"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_gene_id">[docs]</a>    <span class="k">def</span> <span class="nf">normalize_gene_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove any unnecessary prefixes around the gene ID.</span>
+
+<span class="sd">        Generate a new stable id if it is not recognized as valid.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            gene: Gene feature to normalize.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A normalized gene id.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">prefixes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gene-&quot;</span><span class="p">,</span> <span class="s2">&quot;gene:&quot;</span><span class="p">]</span>
+        <span class="n">new_gene_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_prefixes</span><span class="p">(</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">prefixes</span><span class="p">)</span>
+
+        <span class="c1"># In case the gene id is not valid, use the GeneID</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_id</span><span class="p">(</span><span class="n">new_gene_id</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Gene id is not valid: </span><span class="si">{</span><span class="n">new_gene_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">qual</span> <span class="o">=</span> <span class="n">gene</span><span class="o">.</span><span class="n">qualifiers</span>
+            <span class="k">if</span> <span class="s2">&quot;Dbxref&quot;</span> <span class="ow">in</span> <span class="n">qual</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">xref</span> <span class="ow">in</span> <span class="n">qual</span><span class="p">[</span><span class="s2">&quot;Dbxref&quot;</span><span class="p">]:</span>
+                    <span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">=</span> <span class="n">xref</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">db</span> <span class="o">==</span> <span class="s2">&quot;GeneID&quot;</span><span class="p">:</span>
+                        <span class="n">new_gene_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">db</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using GeneID </span><span class="si">{</span><span class="n">new_gene_id</span><span class="si">}</span><span class="s2"> for stable_id instead of </span><span class="si">{</span><span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="n">new_gene_id</span>
+
+            <span class="c1"># Make a new stable_id</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_missing_stable_ids</span><span class="p">:</span>
+                <span class="n">new_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_stable_id</span><span class="p">()</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;New id: </span><span class="si">{</span><span class="n">new_gene_id</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">new_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">new_id</span>
+            <span class="k">raise</span> <span class="n">GFFParserError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Can&#39;t use invalid gene id for </span><span class="si">{</span><span class="n">gene</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_gene_id</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.generate_stable_id"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.generate_stable_id">[docs]</a>    <span class="k">def</span> <span class="nf">generate_stable_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a new unique gene stable_id with a prefix.</span>
+
+<span class="sd">        The id is made up of a prefix and a number, which is auto incremented.</span>
+<span class="sd">        Define the prefix with the param &quot;stable_id_prefix&quot;,</span>
+<span class="sd">        or use the genome organism_abbrev and prepend &quot;TMP_&quot; to it.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stable_id_prefix</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stable_id_prefix</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">genome</span><span class="p">:</span>
+                <span class="n">org</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">genome</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;BRC4&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;organism_abbrev&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">org</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;TMP_PREFIX_&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;TMP_&quot;</span> <span class="o">+</span> <span class="n">org</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stable_id_prefix</span> <span class="o">=</span> <span class="n">prefix</span>
+
+        <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_stable_id_number</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">new_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">number</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_stable_id_number</span> <span class="o">=</span> <span class="n">number</span>
+
+        <span class="k">return</span> <span class="n">new_id</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.valid_id"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.valid_id">[docs]</a>    <span class="k">def</span> <span class="nf">valid_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check that the format of a stable id is valid.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_gene_id</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="n">min_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_id_length</span>
+
+        <span class="c1"># Trna (from tRNAscan)</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^Trna&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stable id is a Trna from tRNA-scan: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Coordinates</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^.+:\d+..\d+&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stable id is a coordinate: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Special characters</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[ |]&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stable id contains special characters: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Min length</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_length</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stable id is too short (&lt;</span><span class="si">{</span><span class="n">min_length</span><span class="si">}</span><span class="s2">) </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.normalize_transcript_id"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_transcript_id">[docs]</a>    <span class="k">def</span> <span class="nf">normalize_transcript_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use a gene ID and a number to make a formatted transcript ID.&quot;&quot;&quot;</span>
+
+        <span class="n">transcript_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">gene_id</span><span class="si">}</span><span class="s2">_t</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">transcript_id</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.normalize_cds_id"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_cds_id">[docs]</a>    <span class="k">def</span> <span class="nf">normalize_cds_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cds_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the CDS ID is proper:</span>
+<span class="sd">        - Remove any unnecessary prefixes around the CDS ID</span>
+<span class="sd">        - Delete the ID if it is not proper</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">prefixes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cds-&quot;</span><span class="p">,</span> <span class="s2">&quot;cds:&quot;</span><span class="p">]</span>
+        <span class="n">cds_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_prefixes</span><span class="p">(</span><span class="n">cds_id</span><span class="p">,</span> <span class="n">prefixes</span><span class="p">)</span>
+
+        <span class="c1"># Special case: if the ID doesn&#39;t look like one, remove it</span>
+        <span class="c1"># It needs to be regenerated</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_id</span><span class="p">(</span><span class="n">cds_id</span><span class="p">):</span>
+            <span class="n">cds_id</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">cds_id</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.normalize_pseudogene_cds"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.normalize_pseudogene_cds">[docs]</a>    <span class="k">def</span> <span class="nf">normalize_pseudogene_cds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure CDS from a pseudogene have a proper ID</span>
+<span class="sd">        - different from the gene</span>
+<span class="sd">        - derived from the gene if it is not proper</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">transcript</span> <span class="ow">in</span> <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">feat</span> <span class="ow">in</span> <span class="n">transcript</span><span class="o">.</span><span class="n">sub_features</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;CDS&quot;</span><span class="p">:</span>
+                    <span class="n">feat</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize_cds_id</span><span class="p">(</span><span class="n">feat</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">gene</span><span class="o">.</span><span class="n">id</span><span class="p">):</span>
+                        <span class="n">feat</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">transcript</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">_cds&quot;</span>
+                        <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;ID&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">feat</span><span class="o">.</span><span class="n">id</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.remove_cds_from_pseudogene"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.remove_cds_from_pseudogene">[docs]</a>    <span class="k">def</span> <span class="nf">remove_cds_from_pseudogene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove CDS from a pseudogene</span>
+<span class="sd">        This assumes the CDSs are sub features of the transcript or the gene</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">gene_subfeats</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">transcript</span> <span class="ow">in</span> <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">transcript</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;CDS&quot;</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Remove pseudo CDS </span><span class="si">{</span><span class="n">transcript</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">new_subfeats</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">feat</span> <span class="ow">in</span> <span class="n">transcript</span><span class="o">.</span><span class="n">sub_features</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;CDS&quot;</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Remove pseudo CDS </span><span class="si">{</span><span class="n">feat</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">new_subfeats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
+            <span class="n">transcript</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="n">new_subfeats</span>
+            <span class="n">gene_subfeats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">transcript</span><span class="p">)</span>
+        <span class="n">gene</span><span class="o">.</span><span class="n">sub_features</span> <span class="o">=</span> <span class="n">gene_subfeats</span></div>
+
+<div class="viewcode-block" id="GFFSimplifier.remove_prefixes"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.process.GFFSimplifier.remove_prefixes">[docs]</a>    <span class="k">def</span> <span class="nf">remove_prefixes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prefixes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove prefixes from an identifier if they are found</span>
+<span class="sd">        Return the unaltered identifier otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="n">prefixes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">identifier</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
+                <span class="n">identifier</span> <span class="o">=</span> <span class="n">identifier</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="p">:]</span>
+        <span class="k">return</span> <span class="n">identifier</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main script entry-point.&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Standardize the gene model representation of a GFF3 file, and extract the functional &quot;</span>
+            <span class="s2">&quot;annotation in a separate file.&quot;</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_src_path</span><span class="p">(</span><span class="s2">&quot;--in_gff_path&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Input GFF3 file&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_src_path</span><span class="p">(</span><span class="s2">&quot;--genome_data&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Genome JSON file&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--make_missing_stable_ids&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Generate stable IDs when missing or invalid&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_dst_path</span><span class="p">(</span><span class="s2">&quot;--out_gff_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;gene_models.gff3&quot;</span><span class="p">),</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Output GFF3 file&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_dst_path</span><span class="p">(</span>
+        <span class="s2">&quot;--out_func_path&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;functional_annotation.json&quot;</span><span class="p">),</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Output functional annotation JSON file&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># Merge multiline gene features in a separate file</span>
+    <span class="n">interim_gff_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">in_gff_path</span><span class="si">}</span><span class="s2">_INTERIM_MERGE&quot;</span><span class="p">)</span>
+    <span class="n">merger</span> <span class="o">=</span> <span class="n">GFFGeneMerger</span><span class="p">()</span>
+    <span class="n">merged_genes</span> <span class="o">=</span> <span class="n">merger</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">in_gff_path</span><span class="p">,</span> <span class="n">interim_gff_path</span><span class="p">)</span>
+    <span class="n">num_merged_genes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">merged_genes</span><span class="p">)</span>
+    <span class="n">in_gff_path</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">in_gff_path</span>
+    <span class="c1"># If there are split genes, decide to merge, or just die</span>
+    <span class="k">if</span> <span class="n">num_merged_genes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># Report the list of merged genes in case something does not look right</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_merged_genes</span><span class="si">}</span><span class="s2"> genes merged:</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">merged_genes</span><span class="p">))</span>
+        <span class="c1"># Use the GFF with the merged genes for the next part</span>
+        <span class="n">in_gff_path</span> <span class="o">=</span> <span class="n">interim_gff_path</span>
+
+    <span class="c1"># Load GFF3 data and write a simpler version that follows our specifications as well as a</span>
+    <span class="c1"># functional annotation JSON file</span>
+    <span class="n">gff_data</span> <span class="o">=</span> <span class="n">GFFSimplifier</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">genome_data</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">make_missing_stable_ids</span><span class="p">)</span>
+    <span class="n">gff_data</span><span class="o">.</span><span class="n">simpler_gff3</span><span class="p">(</span><span class="n">in_gff_path</span><span class="p">)</span>
+    <span class="n">gff_data</span><span class="o">.</span><span class="n">records</span><span class="o">.</span><span class="n">to_gff</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">out_gff_path</span><span class="p">)</span>
+    <span class="n">gff_data</span><span class="o">.</span><span class="n">annotations</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">out_func_path</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

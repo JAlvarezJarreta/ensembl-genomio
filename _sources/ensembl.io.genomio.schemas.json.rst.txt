@@ -1,0 +1,26 @@
+ensembl.io.genomio.schemas.json package
+=======================================
+
+.. automodule:: ensembl.io.genomio.schemas.json
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.io.genomio.schemas.json.factory module
+----------------------------------------------
+
+.. automodule:: ensembl.io.genomio.schemas.json.factory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.schemas.json.validate module
+-----------------------------------------------
+
+.. automodule:: ensembl.io.genomio.schemas.json.validate
+   :members:
+   :undoc-members:
+   :show-inheritance:

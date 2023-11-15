@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>ensembl.io.genomio.assembly package &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/agogo.css?v=cc331ede" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-ensembl.io.genomio.assembly">
+<span id="ensembl-io-genomio-assembly-package"></span><h1>ensembl.io.genomio.assembly package<a class="headerlink" href="#module-ensembl.io.genomio.assembly" title="Permalink to this heading">¶</a></h1>
+<p>Assembly preparation module.</p>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-ensembl.io.genomio.assembly.download">
+<span id="ensembl-io-genomio-assembly-download-module"></span><h2>ensembl.io.genomio.assembly.download module<a class="headerlink" href="#module-ensembl.io.genomio.assembly.download" title="Permalink to this heading">¶</a></h2>
+<p>Download an assembly data files from INSDC or RefSeq.</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="ensembl.io.genomio.assembly.download.FileDownloadError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.assembly.download.</span></span><span class="sig-name descname"><span class="pre">FileDownloadError</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/assembly/download.html#FileDownloadError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.assembly.download.FileDownloadError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>When a file download fails or there is a problem with that file.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="ensembl.io.genomio.assembly.download.UnsupportedFormatError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.assembly.download.</span></span><span class="sig-name descname"><span class="pre">UnsupportedFormatError</span></span><a class="reference internal" href="_modules/ensembl/io/genomio/assembly/download.html#UnsupportedFormatError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.assembly.download.UnsupportedFormatError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>When a string does not have the expected format.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.assembly.download.download_files">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.assembly.download.</span></span><span class="sig-name descname"><span class="pre">download_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">accession</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dl_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_redo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/assembly/download.html#download_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.assembly.download.download_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an INSDC accession, download all available files from the ftp to the download dir</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.assembly.download.get_checksums">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.assembly.download.</span></span><span class="sig-name descname"><span class="pre">get_checksums</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checksum_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/assembly/download.html#get_checksums"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.assembly.download.get_checksums" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a dict of checksums from a file, with file names as keys and sums as values</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.assembly.download.get_files_selection">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.assembly.download.</span></span><span class="sig-name descname"><span class="pre">get_files_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dl_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/assembly/download.html#get_files_selection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.assembly.download.get_files_selection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Among all the files downloaded, only keep a subset for which we use a controlled name.
+Return a dict[name] = file_path
+The file_path is relative to the download dir
+Current names are defined in _FILE_ENDS</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.assembly.download.get_root_name">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.assembly.download.</span></span><span class="sig-name descname"><span class="pre">get_root_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dl_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/assembly/download.html#get_root_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.assembly.download.get_root_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get root name for assembly files, using the report file as base</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.assembly.download.md5_files">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.assembly.download.</span></span><span class="sig-name descname"><span class="pre">md5_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dl_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/assembly/download.html#md5_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.assembly.download.md5_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check all files checksums with the sums listed in a checksum file, if available.
+Return False if there is no checksum file, or a file is missing, or has a wrong checksum.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.assembly.download.retrieve_assembly_data">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.assembly.download.</span></span><span class="sig-name descname"><span class="pre">retrieve_assembly_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">accession</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">download_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_increment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_redo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/assembly/download.html#retrieve_assembly_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.assembly.download.retrieve_assembly_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>accession</strong> – Genome Assembly accession</p></li>
+<li><p><strong>download_dir</strong> – Path to directory used to store retrieved</p></li>
+<li><p><strong>max_increment</strong> – If you want to allow assembly versions</p></li>
+<li><p><strong>max_redo</strong> – Set max number of times to retry downloading a file</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+              <br/>
+              <a href="_sources/ensembl.io.genomio.assembly.rst.txt"
+                rel="nofollow">Show Source</a>
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

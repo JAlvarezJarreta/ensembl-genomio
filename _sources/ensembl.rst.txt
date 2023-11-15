@@ -1,0 +1,12 @@
+ensembl namespace
+=================
+
+.. py:module:: ensembl
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   ensembl.brc4

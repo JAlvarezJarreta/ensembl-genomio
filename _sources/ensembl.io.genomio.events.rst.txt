@@ -1,0 +1,34 @@
+ensembl.io.genomio.events package
+=================================
+
+.. automodule:: ensembl.io.genomio.events
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.io.genomio.events.dump module
+-------------------------------------
+
+.. automodule:: ensembl.io.genomio.events.dump
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.events.format module
+---------------------------------------
+
+.. automodule:: ensembl.io.genomio.events.format
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.events.load module
+-------------------------------------
+
+.. automodule:: ensembl.io.genomio.events.load
+   :members:
+   :undoc-members:
+   :show-inheritance:

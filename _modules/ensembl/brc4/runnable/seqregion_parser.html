@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.brc4.runnable.seqregion_parser &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.brc4.runnable.seqregion_parser</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!env python3</span>
+<span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.io.genomio.utils.archive_utils</span> <span class="kn">import</span> <span class="n">open_gz_file</span>
+
+
+<div class="viewcode-block" id="SeqregionParser"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.seqregion_parser.SeqregionParser">[docs]</a><span class="k">class</span> <span class="nc">SeqregionParser</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parser of a seq_region report from INSDC/RefSeq.</span>
+
+<span class="sd">    The main method of the Parser is get_report_regions, which returns a Dict of seq_regions,</span>
+<span class="sd">    where the keys are the names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">synonym_map</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;Sequence-Name&quot;</span><span class="p">:</span> <span class="s2">&quot;INSDC_submitted_name&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;GenBank-Accn&quot;</span><span class="p">:</span> <span class="s2">&quot;INSDC&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;RefSeq-Accn&quot;</span><span class="p">:</span> <span class="s2">&quot;RefSeq&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Assigned-Molecule&quot;</span><span class="p">:</span> <span class="s2">&quot;GenBank&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">molecule_location</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;chromosome&quot;</span><span class="p">:</span> <span class="s2">&quot;nuclear_chromosome&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;mitochondrion&quot;</span><span class="p">:</span> <span class="s2">&quot;mitochondrial_chromosome&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;apicoplast&quot;</span><span class="p">:</span> <span class="s2">&quot;apicoplast_chromosome&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;plasmid&quot;</span><span class="p">:</span> <span class="s2">&quot;plasmid&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;linkage group&quot;</span><span class="p">:</span> <span class="s2">&quot;linkage_group&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;kinetoplast&quot;</span><span class="p">:</span> <span class="s2">&quot;kinetoplast&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+<div class="viewcode-block" id="SeqregionParser.get_report_regions"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.seqregion_parser.SeqregionParser.get_report_regions">[docs]</a>    <span class="k">def</span> <span class="nf">get_report_regions</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">report_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">accession</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">use_refseq</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get seq_region data from report file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            report_path: Path to the INSDC seq_region report.</span>
+<span class="sd">            use_refseq: Expect a RefSeq seq_region report.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            A dict of seq_regions dicts, with their name as the key</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">accession</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;GCF&quot;</span><span class="p">):</span>
+            <span class="n">use_refseq</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># Get the report in a CSV format, easier to manipulate</span>
+        <span class="n">report_csv</span><span class="p">,</span> <span class="n">metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">report_to_csv</span><span class="p">(</span><span class="n">report_path</span><span class="p">)</span>
+
+        <span class="c1"># Feed the csv string to the CSV reader</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="n">report_csv</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(),</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">quoting</span><span class="o">=</span><span class="n">csv</span><span class="o">.</span><span class="n">QUOTE_NONE</span><span class="p">)</span>
+
+        <span class="c1"># Metadata</span>
+        <span class="n">assembly_level</span> <span class="o">=</span> <span class="s2">&quot;contig&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;Assembly level&quot;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+            <span class="n">assembly_level</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;Assembly level&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c1"># Create the seq_regions</span>
+        <span class="n">seq_regions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+            <span class="n">seq_region</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_seq_region</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">assembly_level</span><span class="p">,</span> <span class="n">use_refseq</span><span class="p">)</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">seq_region</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+            <span class="n">seq_regions</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">seq_region</span>
+
+        <span class="k">return</span> <span class="n">seq_regions</span></div>
+
+<div class="viewcode-block" id="SeqregionParser.report_to_csv"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.seqregion_parser.SeqregionParser.report_to_csv">[docs]</a>    <span class="k">def</span> <span class="nf">report_to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load an assembly report as a csv string.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            report_path: Path to the INSDC seq_region report.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            The csv as a string, and the head metadata as a dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">with</span> <span class="n">open_gz_file</span><span class="p">(</span><span class="n">report_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">report</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">last_head</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">report</span><span class="p">:</span>
+                <span class="c1"># Ignore header</span>
+                <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">):</span>
+                    <span class="c1"># Get metadata values if possible</span>
+                    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;# (.+?): (.+?)$&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                        <span class="n">metadata</span><span class="p">[</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">last_head</span> <span class="o">=</span> <span class="n">line</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">last_head</span><span class="p">:</span>
+                        <span class="n">data</span> <span class="o">+=</span> <span class="n">last_head</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="n">last_head</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                    <span class="n">data</span> <span class="o">+=</span> <span class="n">line</span>
+            <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">metadata</span></div>
+
+<div class="viewcode-block" id="SeqregionParser.make_seq_region"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.seqregion_parser.SeqregionParser.make_seq_region">[docs]</a>    <span class="k">def</span> <span class="nf">make_seq_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">assembly_level</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">use_refseq</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;From a row of the report, create one seq_region dict.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            row: A seq_region row from the INSDC report.</span>
+<span class="sd">            assembly_level: what level is the seq_region (chromosome, contig, etc.)</span>
+<span class="sd">            use_refseq: Expect a RefSeq seq_region report.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A seq_region dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">seq_region</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Map the fields to their synonym name</span>
+        <span class="n">synonym_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">synonym_map</span>
+        <span class="n">molecule_location</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">molecule_location</span>
+
+        <span class="c1"># Synonyms</span>
+        <span class="n">synonyms</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">synonym_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">row</span> <span class="ow">and</span> <span class="n">row</span><span class="p">[</span><span class="n">field</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;na&quot;</span><span class="p">:</span>
+                <span class="n">synonym</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="n">field</span><span class="p">]}</span>
+                <span class="n">synonyms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">synonym</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">synonyms</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">synonyms</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">])</span>
+            <span class="n">seq_region</span><span class="p">[</span><span class="s2">&quot;synonyms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">synonyms</span>
+
+        <span class="c1"># Length</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="s2">&quot;Sequence-Length&quot;</span>
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">row</span> <span class="ow">and</span> <span class="n">row</span><span class="p">[</span><span class="n">field</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;na&quot;</span><span class="p">:</span>
+            <span class="n">seq_region</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">field</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">use_refseq</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;RefSeq-Accn&quot;</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+                <span class="n">seq_region</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;RefSeq-Accn&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No RefSeq name for </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;Sequence-Name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;GenBank-Accn&quot;</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+                <span class="n">seq_region</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;GenBank-Accn&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No INSDC name for </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;Sequence-Name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Coord system and location</span>
+        <span class="n">seq_role</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;Sequence-Role&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Scaffold?</span>
+        <span class="k">if</span> <span class="n">seq_role</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;unplaced-scaffold&quot;</span><span class="p">,</span> <span class="s2">&quot;unlocalized-scaffold&quot;</span><span class="p">,</span> <span class="s2">&quot;alt-scaffold&quot;</span><span class="p">):</span>
+            <span class="n">seq_region</span><span class="p">[</span><span class="s2">&quot;coord_system_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;scaffold&quot;</span>
+
+        <span class="c1"># Chromosome? Check location</span>
+        <span class="k">elif</span> <span class="n">seq_role</span> <span class="o">==</span> <span class="s2">&quot;assembled-molecule&quot;</span><span class="p">:</span>
+            <span class="n">seq_region</span><span class="p">[</span><span class="s2">&quot;coord_system_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;chromosome&quot;</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;Assigned-Molecule-Location/Type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+            <span class="c1"># Get location metadata</span>
+            <span class="k">if</span> <span class="n">location</span> <span class="ow">in</span> <span class="n">molecule_location</span><span class="p">:</span>
+                <span class="n">seq_location</span> <span class="o">=</span> <span class="n">molecule_location</span><span class="p">[</span><span class="n">location</span><span class="p">]</span>
+                <span class="n">seq_region</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">seq_location</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unrecognized sequence location: </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unrecognized sequence role: </span><span class="si">{</span><span class="n">seq_role</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">seq_region</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

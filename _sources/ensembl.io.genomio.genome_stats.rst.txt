@@ -1,0 +1,26 @@
+ensembl.io.genomio.genome\_stats package
+========================================
+
+.. automodule:: ensembl.io.genomio.genome_stats
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.io.genomio.genome\_stats.compare module
+-----------------------------------------------
+
+.. automodule:: ensembl.io.genomio.genome_stats.compare
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.genome\_stats.dump module
+--------------------------------------------
+
+.. automodule:: ensembl.io.genomio.genome_stats.dump
+   :members:
+   :undoc-members:
+   :show-inheritance:

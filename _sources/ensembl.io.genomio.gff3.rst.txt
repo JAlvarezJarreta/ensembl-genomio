@@ -1,0 +1,26 @@
+ensembl.io.genomio.gff3 package
+===============================
+
+.. automodule:: ensembl.io.genomio.gff3
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.io.genomio.gff3.extract\_annotation module
+--------------------------------------------------
+
+.. automodule:: ensembl.io.genomio.gff3.extract_annotation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.gff3.process module
+--------------------------------------
+
+.. automodule:: ensembl.io.genomio.gff3.process
+   :members:
+   :undoc-members:
+   :show-inheritance:

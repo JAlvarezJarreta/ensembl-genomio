@@ -1,0 +1,26 @@
+ensembl.io.genomio.genbank package
+==================================
+
+.. automodule:: ensembl.io.genomio.genbank
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.io.genomio.genbank.download module
+------------------------------------------
+
+.. automodule:: ensembl.io.genomio.genbank.download
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.io.genomio.genbank.extract\_data module
+-----------------------------------------------
+
+.. automodule:: ensembl.io.genomio.genbank.extract_data
+   :members:
+   :undoc-members:
+   :show-inheritance:

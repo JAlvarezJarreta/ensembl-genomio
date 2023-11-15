@@ -1,0 +1,18 @@
+ensembl.io.genomio.fasta package
+================================
+
+.. automodule:: ensembl.io.genomio.fasta
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.io.genomio.fasta.process module
+---------------------------------------
+
+.. automodule:: ensembl.io.genomio.fasta.process
+   :members:
+   :undoc-members:
+   :show-inheritance:

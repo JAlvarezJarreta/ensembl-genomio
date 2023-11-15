@@ -1,0 +1,146 @@
+ensembl.brc4.runnable package
+=============================
+
+.. automodule:: ensembl.brc4.runnable
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.brc4.runnable.compare\_fasta module
+-------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.compare_fasta
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.compare\_report module
+--------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.compare_report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.core\_server module
+-----------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.core_server
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.download\_genbank module
+----------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.download_genbank
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.dump\_stable\_ids module
+----------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.dump_stable_ids
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.extract\_from\_gb module
+----------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.extract_from_gb
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.fill\_metadata module
+-------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.fill_metadata
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.gff3\_specifier module
+--------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.gff3_specifier
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.integrity module
+--------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.integrity
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.json\_schema\_factory module
+--------------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.json_schema_factory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.load\_sequence\_data module
+-------------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.load_sequence_data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.manifest module
+-------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.manifest
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.manifest\_stats module
+--------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.manifest_stats
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.prepare\_genome module
+--------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.prepare_genome
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.read\_json module
+---------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.read_json
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.say\_accession module
+-------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.say_accession
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ensembl.brc4.runnable.seqregion\_parser module
+----------------------------------------------
+
+.. automodule:: ensembl.brc4.runnable.seqregion_parser
+   :members:
+   :undoc-members:
+   :show-inheritance:

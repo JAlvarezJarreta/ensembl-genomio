@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.brc4.runnable.gff3_specifier &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.brc4.runnable.gff3_specifier</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!env python3</span>
+<span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+
+<span class="kn">import</span> <span class="nn">eHive</span>
+<span class="kn">from</span> <span class="nn">Bio</span> <span class="kn">import</span> <span class="n">SeqIO</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span><span class="p">,</span> <span class="n">rename</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">floor</span>
+
+
+<div class="viewcode-block" id="gff3_specifier"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.gff3_specifier.gff3_specifier">[docs]</a><span class="k">class</span> <span class="nc">gff3_specifier</span><span class="p">(</span><span class="n">eHive</span><span class="o">.</span><span class="n">BaseRunnable</span><span class="p">):</span>
+    <span class="n">allowed_biotypes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;gene&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;mRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;exon&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;CDS&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;three_prime_UTR&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;five_prime_UTR&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;pseudogenic_transcript&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;pseudogenic_exon&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;pseudogene&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">ignored_biotypes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;biological_region&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;supercontig&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;chromosome&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;scaffold&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;contig&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;region&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">allowed_attributes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;ID&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Parent&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Derives_from&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;biotype&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+<div class="viewcode-block" id="gff3_specifier.param_defaults"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.gff3_specifier.gff3_specifier.param_defaults">[docs]</a>    <span class="k">def</span> <span class="nf">param_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="c1"># Ensembl adds a prefix to features because different</span>
+            <span class="c1"># types can use the same id in EG (gene and transcript)</span>
+            <span class="s2">&quot;ensembl_mode&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;check_biotypes&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="gff3_specifier.run"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.gff3_specifier.gff3_specifier.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">gff3_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;gff_file&quot;</span><span class="p">)</span>
+        <span class="n">new_gff3_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_gff3</span><span class="p">(</span><span class="n">gff3_path</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataflow</span><span class="p">({</span><span class="s2">&quot;specifications_gff_file&quot;</span><span class="p">:</span> <span class="n">new_gff3_path</span><span class="p">},</span> <span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="gff3_specifier.get_gff3"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.gff3_specifier.gff3_specifier.get_gff3">[docs]</a>    <span class="k">def</span> <span class="nf">get_gff3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gff3_path</span><span class="p">):</span>
+        <span class="n">gff3_tmp_path</span> <span class="o">=</span> <span class="n">gff3_path</span> <span class="o">+</span> <span class="s2">&quot;.specifications.gff3&quot;</span>
+
+        <span class="k">if</span> <span class="n">gff3_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.gz&quot;</span><span class="p">):</span>
+            <span class="n">gff3_tmp_path</span> <span class="o">+=</span> <span class="s2">&quot;.gz&quot;</span>
+            <span class="k">with</span> <span class="n">io</span><span class="o">.</span><span class="n">TextIOWrapper</span><span class="p">(</span><span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">gff3_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">))</span> <span class="k">as</span> <span class="n">gff3_handle</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">io</span><span class="o">.</span><span class="n">TextIOWrapper</span><span class="p">(</span><span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">gff3_tmp_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">))</span> <span class="k">as</span> <span class="n">tmph</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parse_gff3</span><span class="p">(</span><span class="n">gff3_handle</span><span class="p">,</span> <span class="n">tmph</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">gff3_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">gff3_handle</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">gff3_tmp_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tmph</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parse_gff3</span><span class="p">(</span><span class="n">gff3_handle</span><span class="p">,</span> <span class="n">tmph</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">gff3_tmp_path</span></div>
+
+<div class="viewcode-block" id="gff3_specifier.parse_gff3"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.gff3_specifier.gff3_specifier.parse_gff3">[docs]</a>    <span class="k">def</span> <span class="nf">parse_gff3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gff3_handle</span><span class="p">,</span> <span class="n">tmph</span><span class="p">):</span>
+        <span class="n">remove_prefix</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;ensembl_mode&quot;</span><span class="p">):</span>
+            <span class="n">remove_prefix</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">skipped_known_biotypes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">skipped_unknown_biotypes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">skipped_attributes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">gff3_handle</span><span class="p">:</span>
+            <span class="c1"># Skip separator lines</span>
+            <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;###&quot;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="c1"># Keep all comment lines intact</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;#&quot;</span><span class="p">:</span>
+                <span class="n">tmph</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span>
+                <span class="p">(</span><span class="n">chrom</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">biotype</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">col6</span><span class="p">,</span> <span class="n">col7</span><span class="p">,</span> <span class="n">col8</span><span class="p">,</span> <span class="n">attribs</span><span class="p">)</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Filter biotype</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;check_biotypes&quot;</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">allowed_biotypes</span>
+                    <span class="ow">and</span> <span class="n">biotype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">allowed_biotypes</span>
+                <span class="p">):</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">biotype</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;RNA&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">biotype</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;RNA_gene&quot;</span><span class="p">)):</span>
+                        <span class="k">if</span> <span class="n">biotype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignored_biotypes</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">biotype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">skipped_known_biotypes</span><span class="p">:</span>
+                                <span class="n">skipped_known_biotypes</span><span class="p">[</span><span class="n">biotype</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                            <span class="n">skipped_known_biotypes</span><span class="p">[</span><span class="n">biotype</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">biotype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">skipped_unknown_biotypes</span><span class="p">:</span>
+                                <span class="n">skipped_unknown_biotypes</span><span class="p">[</span><span class="n">biotype</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                            <span class="n">skipped_unknown_biotypes</span><span class="p">[</span><span class="n">biotype</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">continue</span>
+
+                <span class="c1"># Filter attributes</span>
+                <span class="n">attrs</span> <span class="o">=</span> <span class="n">attribs</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)</span>
+                <span class="n">attributes</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+                    <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">allowed_attributes</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">allowed_attributes</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">skipped_attributes</span><span class="p">:</span>
+                            <span class="n">skipped_attributes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">skipped_attributes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">continue</span>
+
+                    <span class="c1"># Skip ID for exons</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;ID&quot;</span> <span class="ow">and</span> <span class="n">biotype</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;exon&quot;</span><span class="p">,</span> <span class="s2">&quot;pseudogenic_exon&quot;</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">skipped_attributes</span><span class="p">:</span>
+                            <span class="n">skipped_attributes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">skipped_attributes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">continue</span>
+                    <span class="c1"># Skip biotype for exons, CDS</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;biotype&quot;</span> <span class="ow">and</span> <span class="n">biotype</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;exon&quot;</span><span class="p">,</span> <span class="s2">&quot;pseudogenic_exon&quot;</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">skipped_attributes</span><span class="p">:</span>
+                            <span class="n">skipped_attributes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">skipped_attributes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">continue</span>
+
+                    <span class="c1"># Special production-specific modification</span>
+                    <span class="k">if</span> <span class="n">remove_prefix</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;ID&quot;</span><span class="p">,</span> <span class="s2">&quot;Parent&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                        <span class="p">(</span><span class="n">btype</span><span class="p">,</span> <span class="n">real_value</span><span class="p">)</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">btype</span> <span class="ow">and</span> <span class="n">real_value</span><span class="p">:</span>
+                            <span class="n">value</span> <span class="o">=</span> <span class="n">real_value</span>
+
+                    <span class="n">attributes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span> <span class="o">+</span> <span class="n">value</span><span class="p">)</span>
+
+                <span class="c1"># Print back the line</span>
+                <span class="n">new_attribs</span> <span class="o">=</span> <span class="s2">&quot;;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">attributes</span><span class="p">)</span>
+                <span class="n">new_line</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">chrom</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">biotype</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">col6</span><span class="p">,</span> <span class="n">col7</span><span class="p">,</span> <span class="n">col8</span><span class="p">,</span> <span class="n">new_attribs</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">tmph</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">new_line</span><span class="p">)</span>
+
+        <span class="c1"># Print stats</span>
+        <span class="k">if</span> <span class="n">skipped_attributes</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Skipped attributes:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">at</span> <span class="ow">in</span> <span class="n">skipped_attributes</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">%s</span><span class="s2">: </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">at</span><span class="p">,</span> <span class="n">skipped_attributes</span><span class="p">[</span><span class="n">at</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="n">skipped_known_biotypes</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Skipped known biotypes:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">bt</span> <span class="ow">in</span> <span class="n">skipped_known_biotypes</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">%s</span><span class="s2">: </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">bt</span><span class="p">,</span> <span class="n">skipped_known_biotypes</span><span class="p">[</span><span class="n">bt</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">skipped_unknown_biotypes</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Skipped unknown biotypes:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">bt</span> <span class="ow">in</span> <span class="n">skipped_unknown_biotypes</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">%s</span><span class="s2">: </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">bt</span><span class="p">,</span> <span class="n">skipped_unknown_biotypes</span><span class="p">[</span><span class="n">bt</span><span class="p">]))</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;Encountered an unknown biotype: </span><span class="si">%s</span><span class="s2">. You need to say if it should be kept or ignored&quot;</span> <span class="o">%</span> <span class="n">bt</span>
+            <span class="p">)</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

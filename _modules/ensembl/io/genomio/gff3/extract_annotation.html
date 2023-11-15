@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.io.genomio.gff3.extract_annotation &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.io.genomio.gff3.extract_annotation</h1><div class="highlight"><pre>
+<span></span><span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;Simple representation of gene features functional annotation extracted from a GFF3 file.&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;Annotation&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;DuplicateIdError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MissingParentError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;AnnotationError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FunctionalAnnotations&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">PathLike</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">Bio.SeqFeature</span> <span class="kn">import</span> <span class="n">SeqFeature</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.io.genomio.utils.json_utils</span> <span class="kn">import</span> <span class="n">print_json</span>
+
+
+<span class="n">Annotation</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+
+<span class="n">_PARENTS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;transcript&quot;</span><span class="p">:</span> <span class="s2">&quot;gene&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;translation&quot;</span><span class="p">:</span> <span class="s2">&quot;transcript&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="DuplicateIdError"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.DuplicateIdError">[docs]</a><span class="k">class</span> <span class="nc">DuplicateIdError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Trying to add a feature with an ID already in use.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="MissingParentError"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.MissingParentError">[docs]</a><span class="k">class</span> <span class="nc">MissingParentError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Trying to add a feature without an expected parent.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="AnnotationError"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.AnnotationError">[docs]</a><span class="k">class</span> <span class="nc">AnnotationError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If anything wrong happens when recording annotations.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="FunctionalAnnotations"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations">[docs]</a><span class="k">class</span> <span class="nc">FunctionalAnnotations</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List of annotations extracted from a GFF3 file.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Annotation</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Annotated features</span>
+        <span class="c1"># Under each feature, each dict&#39;s key is a feature ID</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Annotation</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;gene&quot;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">&quot;transcript&quot;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">&quot;translation&quot;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">&quot;transposable_element&quot;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span>
+        <span class="c1"># Keep parent info: key is the feature ID, value is the parent ID</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;gene&quot;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">&quot;transcript&quot;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="FunctionalAnnotations.add_parent"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.add_parent">[docs]</a>    <span class="k">def</span> <span class="nf">add_parent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">child_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Record a parent-child IDs relationship for a given parent biotype.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">parent_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="n">parent_type</span><span class="p">][</span><span class="n">child_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">parent_id</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MissingParentError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported parent type </span><span class="si">{</span><span class="n">parent_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FunctionalAnnotations.get_parent"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.get_parent">[docs]</a>    <span class="k">def</span> <span class="nf">get_parent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">child_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the parent ID of a given child for a given parent biotype.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">parent_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+            <span class="n">parent_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="n">parent_type</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">child_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">parent_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">MissingParentError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Can&#39;t find </span><span class="si">{</span><span class="n">parent_type</span><span class="si">}</span><span class="s2"> parent for </span><span class="si">{</span><span class="n">child_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">parent_id</span>
+        <span class="k">raise</span> <span class="n">MissingParentError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported parent type </span><span class="si">{</span><span class="n">parent_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FunctionalAnnotations.add_feature"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.add_feature">[docs]</a>    <span class="k">def</span> <span class="nf">add_feature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">,</span> <span class="n">feat_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parent_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add annotation for a feature of a given type. If a parent_id is provided, record the relatioship.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            feature: The feature to create an annotation.</span>
+<span class="sd">            feat_type: Type of the feature to annotate.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">feat_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnnotationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported feature type </span><span class="si">{</span><span class="n">feat_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">feature</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">feat_type</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">AnnotationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Feature </span><span class="si">{</span><span class="n">feat_type</span><span class="si">}</span><span class="s2"> ID </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> already added&quot;</span><span class="p">)</span>
+        <span class="n">feature_object</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generic_feature</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">feat_type</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">feat_type</span><span class="p">][</span><span class="n">feature</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">feature_object</span>
+
+        <span class="k">if</span> <span class="n">parent_id</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">feat_type</span> <span class="ow">in</span> <span class="n">_PARENTS</span><span class="p">:</span>
+                <span class="n">parent_type</span> <span class="o">=</span> <span class="n">_PARENTS</span><span class="p">[</span><span class="n">feat_type</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_parent</span><span class="p">(</span><span class="n">parent_type</span><span class="p">,</span> <span class="n">parent_id</span><span class="p">,</span> <span class="n">feature</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnnotationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No parent possible for </span><span class="si">{</span><span class="n">feat_type</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FunctionalAnnotations.get_features"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.get_features">[docs]</a>    <span class="k">def</span> <span class="nf">get_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feat_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Annotation</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all feature annotations for the requested type.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">feat_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">feat_type</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="n">AnnotationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No such feature type </span><span class="si">{</span><span class="n">feat_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_generic_feature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature</span><span class="p">:</span> <span class="n">SeqFeature</span><span class="p">,</span> <span class="n">feat_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a feature object following the specifications.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            feature: The SeqFeature to add to the list.</span>
+<span class="sd">            feat_type: Feature type of the feature to store (e.g. gene, transcript, translation).</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">feature_object</span><span class="p">:</span> <span class="n">Annotation</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;object_type&quot;</span><span class="p">:</span> <span class="n">feat_type</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">feature</span><span class="o">.</span><span class="n">id</span><span class="p">}</span>
+
+        <span class="c1"># Description?</span>
+        <span class="k">if</span> <span class="s2">&quot;product&quot;</span> <span class="ow">in</span> <span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">:</span>
+            <span class="n">description</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;product&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">product_is_informative</span><span class="p">(</span><span class="n">description</span><span class="p">):</span>
+                <span class="n">feature_object</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">description</span>
+
+        <span class="k">if</span> <span class="s2">&quot;Name&quot;</span> <span class="ow">in</span> <span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span> <span class="ow">and</span> <span class="s2">&quot;description&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">feature_object</span><span class="p">:</span>
+            <span class="n">feature_object</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Don&#39;t keep useless description</span>
+        <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;description&quot;</span> <span class="ow">in</span> <span class="n">feature_object</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">product_is_informative</span><span class="p">(</span>
+            <span class="n">feature_object</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">],</span> <span class="n">feature</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">):</span>
+            <span class="k">del</span> <span class="n">feature_object</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Synonyms?</span>
+        <span class="k">if</span> <span class="s2">&quot;Name&quot;</span> <span class="ow">in</span> <span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">:</span>
+            <span class="n">feat_name</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">feat_name</span> <span class="o">!=</span> <span class="n">feature</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                <span class="n">feature_object</span><span class="p">[</span><span class="s2">&quot;synonyms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;synonym&quot;</span><span class="p">:</span> <span class="n">feat_name</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+
+        <span class="c1"># is_pseudogene?</span>
+        <span class="k">if</span> <span class="n">feature</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;pseudogen&quot;</span><span class="p">):</span>
+            <span class="n">feature_object</span><span class="p">[</span><span class="s2">&quot;is_pseudogene&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="n">feature_object</span>
+
+    <span class="k">def</span> <span class="nf">_transfer_descriptions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Transfers the feature descriptions in 2 steps:</span>
+<span class="sd">        - from translations to transcripts (if the transcript description is empty)</span>
+<span class="sd">        - from transcripts to genes (same case)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_description_up</span><span class="p">(</span><span class="s2">&quot;translation&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_description_up</span><span class="p">(</span><span class="s2">&quot;transcript&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_transfer_description_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child_feature</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Transfer descriptions from all feature of a given type, up to their parent.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            child_feature: Either &quot;translation&quot; (transfer to transcript) or &quot;transcript&quot; (to gene).</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">children_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_features</span><span class="p">(</span><span class="n">child_feature</span><span class="p">)</span>
+        <span class="n">parent_type</span> <span class="o">=</span> <span class="n">_PARENTS</span><span class="p">[</span><span class="n">child_feature</span><span class="p">]</span>
+        <span class="n">parent_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_features</span><span class="p">(</span><span class="n">parent_type</span><span class="p">)</span>
+
+        <span class="c1"># Transfer description from children to their parent</span>
+        <span class="k">for</span> <span class="n">child_id</span><span class="p">,</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children_features</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">child_description</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">child_description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Check parent</span>
+                <span class="n">parent_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parent</span><span class="p">(</span><span class="n">parent_type</span><span class="p">,</span> <span class="n">child_id</span><span class="p">)</span>
+                <span class="n">parent</span> <span class="o">=</span> <span class="n">parent_features</span><span class="p">[</span><span class="n">parent_id</span><span class="p">]</span>
+                <span class="n">parent_description</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">parent_description</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">parent</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">child_description</span>
+
+<div class="viewcode-block" id="FunctionalAnnotations.product_is_informative"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.product_is_informative">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">product_is_informative</span><span class="p">(</span><span class="n">product</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">feat_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns True if the product name contains informative words, False otherwise.</span>
+
+<span class="sd">        It is considered uninformative when the description contains words such as &quot;hypothetical&quot; or</span>
+<span class="sd">        or &quot;putative&quot;. If a feature ID is provided, consider it uninformative as well (we do not want</span>
+<span class="sd">        descriptions to be just the ID).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            product: A product name.</span>
+<span class="sd">            feat_id: Feature ID (optional).</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">non_informative_words</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;hypothetical&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;putative&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;uncharacterized&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;unspecified&quot;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;(of )?unknown function&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;conserved&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;predicted&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;fragment&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;product&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;protein&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;RNA&quot;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;variant( \d+)?&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">non_informative_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">non_informative_words</span><span class="p">),</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+
+        <span class="c1"># Remove the feature ID if it&#39;s in the description</span>
+        <span class="k">if</span> <span class="n">feat_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">feat_id_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">feat_id</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+            <span class="n">product</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">feat_id_re</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">product</span><span class="p">)</span>
+
+        <span class="c1"># Remove punctuations</span>
+        <span class="n">punct_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[,;: _()-]+&quot;</span><span class="p">)</span>
+        <span class="n">product</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">punct_re</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">product</span><span class="p">)</span>
+
+        <span class="c1"># Then remove non informative words</span>
+        <span class="n">product</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">non_informative_re</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">product</span><span class="p">)</span>
+
+        <span class="c1"># Anything (informative) left?</span>
+        <span class="n">empty_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^[ ]*$&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span><span class="n">empty_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">product</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">_to_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">all_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">feat_dict</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">all_list</span> <span class="o">+=</span> <span class="n">feat_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">all_list</span>
+
+<div class="viewcode-block" id="FunctionalAnnotations.to_json"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.gff3.html#ensembl.io.genomio.gff3.extract_annotation.FunctionalAnnotations.to_json">[docs]</a>    <span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out_path</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Print out the current annotation list in a json file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            out_path: JSON file path where to write the data.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_descriptions</span><span class="p">()</span>
+        <span class="n">feats_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_list</span><span class="p">()</span>
+        <span class="n">print_json</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">out_path</span><span class="p">),</span> <span class="n">feats_list</span><span class="p">)</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

@@ -1,0 +1,26 @@
+ensembl.io.genomio package
+==========================
+
+.. automodule:: ensembl.io.genomio
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   ensembl.io.genomio.assembly
+   ensembl.io.genomio.database
+   ensembl.io.genomio.events
+   ensembl.io.genomio.fasta
+   ensembl.io.genomio.genbank
+   ensembl.io.genomio.genome_metadata
+   ensembl.io.genomio.genome_stats
+   ensembl.io.genomio.gff3
+   ensembl.io.genomio.manifest
+   ensembl.io.genomio.schemas
+   ensembl.io.genomio.seq_region
+   ensembl.io.genomio.utils

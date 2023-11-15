@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>ensembl.io.genomio.schemas.json package &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/agogo.css?v=cc331ede" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-ensembl.io.genomio.schemas.json">
+<span id="ensembl-io-genomio-schemas-json-package"></span><h1>ensembl.io.genomio.schemas.json package<a class="headerlink" href="#module-ensembl.io.genomio.schemas.json" title="Permalink to this heading">¶</a></h1>
+<p>Handling and verification of JSON schemas module.</p>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-ensembl.io.genomio.schemas.json.factory">
+<span id="ensembl-io-genomio-schemas-json-factory-module"></span><h2>ensembl.io.genomio.schemas.json.factory module<a class="headerlink" href="#module-ensembl.io.genomio.schemas.json.factory" title="Permalink to this heading">¶</a></h2>
+<p>Generates one JSON file per metadata type inside <cite>manifest</cite>, including the manifest itself.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.schemas.json.factory.json_schema_factory">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.schemas.json.factory.</span></span><span class="sig-name descname"><span class="pre">json_schema_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manifest_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata_types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/schemas/json/factory.html#json_schema_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.schemas.json.factory.json_schema_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates one JSON file per metadata type inside <cite>manifest</cite>, including “manifest.json” itself.</p>
+<p>Each JSON file will have the file name of the metadata type, e.g. “seq_region.json”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>manifest_dir</strong> – Path to the folder with the manifest JSON file to check.</p></li>
+<li><p><strong>metadata_types</strong> – Metadata types to extract from <cite>manifest</cite> as JSON files.</p></li>
+<li><p><strong>output_dir</strong> – Path to the folder where to generate the JSON files.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-ensembl.io.genomio.schemas.json.validate">
+<span id="ensembl-io-genomio-schemas-json-validate-module"></span><h2>ensembl.io.genomio.schemas.json.validate module<a class="headerlink" href="#module-ensembl.io.genomio.schemas.json.validate" title="Permalink to this heading">¶</a></h2>
+<p>Validates a JSON file with the provided JSON schema.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="ensembl.io.genomio.schemas.json.validate.json_schema_validator">
+<span class="sig-prename descclassname"><span class="pre">ensembl.io.genomio.schemas.json.validate.</span></span><span class="sig-name descname"><span class="pre">json_schema_validator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">json_schema</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ensembl/io/genomio/schemas/json/validate.html#json_schema_validator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ensembl.io.genomio.schemas.json.validate.json_schema_validator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates a JSON file with the provided JSON schema.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>json_file</strong> – Path to the JSON file to check.</p></li>
+<li><p><strong>json_schema</strong> – JSON schema to validate <cite>json_file</cite> against.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>check_json_schema –json_file &lt;JSON_FILE&gt; –json_schema &lt;JSON_SCHEMA&gt;</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+              <br/>
+              <a href="_sources/ensembl.io.genomio.schemas.json.rst.txt"
+                rel="nofollow">Show Source</a>
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

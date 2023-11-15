@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.io.genomio.events.dump &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.io.genomio.events.dump</h1><div class="highlight"><pre>
+<span></span><span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;Module to dump stable id events from an Ensembl Core database&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span> <span class="nn">ensembl.brc4.runnable.core_server</span> <span class="kn">import</span> <span class="n">CoreServer</span>
+<span class="kn">from</span> <span class="nn">ensembl.utils.argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
+
+
+<span class="n">BRC4_START_DATE</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">IdsSet</span> <span class="o">=</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<span class="n">DictToIdsSet</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">IdsSet</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Pair"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.Pair">[docs]</a><span class="k">class</span> <span class="nc">Pair</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple old_id - new_id pair representation&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">new_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a pair with an old_id and a new_id if provided&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">old_id</span> <span class="o">=</span> <span class="n">old_id</span> <span class="k">if</span> <span class="n">old_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">new_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">new_id</span> <span class="o">=</span> <span class="n">new_id</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">new_id</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+<div class="viewcode-block" id="Pair.has_old_id"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.Pair.has_old_id">[docs]</a>    <span class="k">def</span> <span class="nf">has_old_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the pair has an old_id&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_id</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="Pair.has_new_id"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.Pair.has_new_id">[docs]</a>    <span class="k">def</span> <span class="nf">has_new_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the pair has a new_id&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_id</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="Pair.is_empty"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.Pair.is_empty">[docs]</a>    <span class="k">def</span> <span class="nf">is_empty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test if the current pair has no id.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">has_old_id</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_new_id</span><span class="p">())</span></div></div>
+
+
+<div class="viewcode-block" id="UnsupportedEvent"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.UnsupportedEvent">[docs]</a><span class="k">class</span> <span class="nc">UnsupportedEvent</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If an event is not supported&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="StableIdEvent"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent">[docs]</a><span class="k">class</span> <span class="nc">StableIdEvent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a stable id event from one gene set version to another one. Various events:</span>
+<span class="sd">    - new genes</span>
+<span class="sd">    - deleted genes</span>
+<span class="sd">    - merged genes (several genes to one)</span>
+<span class="sd">    - split genes (one gene to several)</span>
+<span class="sd">    - mixed (several genes to several)</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        from_list: List of genes the previous gene set.</span>
+<span class="sd">        to_list: List of genes in the new gene set.</span>
+<span class="sd">        release: New gene set release name.</span>
+<span class="sd">        date: Date of the new gene set.</span>
+<span class="sd">        name: Name of the event (will be updated automatically).</span>
+<span class="sd">        pairs: All pair of ids for this event.</span>
+
+<span class="sd">    Any gene set before 2019-09 is dubbed pre-BRC4.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">from_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">to_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">release</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a stable id event from a set of old_ids to a set of new_ids&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">from_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">from_list</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">to_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">to_list</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">from_set</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clean_set</span><span class="p">(</span><span class="n">from_list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_set</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clean_set</span><span class="p">(</span><span class="n">to_list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release</span> <span class="o">=</span> <span class="n">release</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pairs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Pair</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;String representation of the stable id event&quot;&quot;&quot;</span>
+
+        <span class="n">from_str</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_set</span><span class="p">)</span>
+        <span class="n">to_str</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_set</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;From </span><span class="si">{</span><span class="n">from_str</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">to_str</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s2"> in release </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<div class="viewcode-block" id="StableIdEvent.brc_format_1"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.brc_format_1">[docs]</a>    <span class="k">def</span> <span class="nf">brc_format_1</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a list events, one line per initial ID, in the following TSV format:</span>
+<span class="sd">        - old gene id</span>
+<span class="sd">        - event name</span>
+<span class="sd">        - release</span>
+<span class="sd">        - release date</span>
+<span class="sd">        - list of old gene ids in the event (comma-separated)</span>
+<span class="sd">        - list of new gene ids in the event (comma-separated)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">from_str</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_set</span><span class="p">)</span>
+        <span class="n">to_str</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_set</span><span class="p">)</span>
+        <span class="n">release</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_full_release</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">date</span><span class="p">:</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="s2">&quot;no_date&quot;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+        <span class="n">line_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">identifier</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_set</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">identifier</span><span class="p">,</span>
+                <span class="n">name</span><span class="p">,</span>
+                <span class="n">release</span><span class="p">,</span>
+                <span class="n">date</span><span class="p">,</span>
+            <span class="p">]</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;merge&quot;</span><span class="p">,</span> <span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="s2">&quot;mixed&quot;</span><span class="p">,</span> <span class="s2">&quot;change&quot;</span><span class="p">):</span>
+                <span class="n">line</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">from_str</span><span class="p">)</span>
+                <span class="n">line</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">to_str</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span>
+            <span class="n">line_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;new&quot;</span><span class="p">:</span>
+            <span class="n">new_id</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">to_set</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">release</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span>
+            <span class="n">line_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">line_list</span></div>
+
+<div class="viewcode-block" id="StableIdEvent.brc_format_2"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.brc_format_2">[docs]</a>    <span class="k">def</span> <span class="nf">brc_format_2</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a list of combination of genes, one line per combination of old_id - new_ids, in the</span>
+<span class="sd">        following TSV format:</span>
+<span class="sd">        - old gene id</span>
+<span class="sd">        - new gene id</span>
+<span class="sd">        - event name</span>
+<span class="sd">        - release</span>
+<span class="sd">        - release date</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">release</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_full_release</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">date</span><span class="p">:</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="s2">&quot;no_date&quot;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+        <span class="n">line_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pairs</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">pair</span><span class="o">.</span><span class="n">old_id</span><span class="p">,</span>
+                <span class="n">pair</span><span class="o">.</span><span class="n">new_id</span><span class="p">,</span>
+                <span class="n">name</span><span class="p">,</span>
+                <span class="n">release</span><span class="p">,</span>
+                <span class="n">date</span><span class="p">,</span>
+            <span class="p">]</span>
+            <span class="n">line_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">line_list</span></div>
+
+<div class="viewcode-block" id="StableIdEvent.clean_set"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.clean_set">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">clean_set</span><span class="p">(</span><span class="n">this_list</span><span class="p">:</span> <span class="n">Set</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes any empty elements from a list.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            this_list: list of items, so of which can be empty/None.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The cleaned list.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">identifier</span> <span class="k">for</span> <span class="n">identifier</span> <span class="ow">in</span> <span class="n">this_list</span> <span class="k">if</span> <span class="n">identifier</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="StableIdEvent.add_from"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.add_from">[docs]</a>    <span class="k">def</span> <span class="nf">add_from</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store an id in the from_set.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">from_id</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_set</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">from_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StableIdEvent.add_to"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.add_to">[docs]</a>    <span class="k">def</span> <span class="nf">add_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store an id in the from_set.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">to_id</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_set</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">to_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StableIdEvent.set_release"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.set_release">[docs]</a>    <span class="k">def</span> <span class="nf">set_release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">release</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the release name of the event&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release</span> <span class="o">=</span> <span class="n">release</span></div>
+
+<div class="viewcode-block" id="StableIdEvent.set_date"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.set_date">[docs]</a>    <span class="k">def</span> <span class="nf">set_date</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the date of the release for this event&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">date</span></div>
+
+<div class="viewcode-block" id="StableIdEvent.add_pair"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.add_pair">[docs]</a>    <span class="k">def</span> <span class="nf">add_pair</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="n">Pair</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Keeps a record of this pair.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pair: a Pair to record.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: can&#39;t add an empty pair.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pair</span><span class="o">.</span><span class="n">is_empty</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected at least one value in the given pair </span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StableIdEvent.get_full_release"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.get_full_release">[docs]</a>    <span class="k">def</span> <span class="nf">get_full_release</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the expanded release name, pre-BRC4 or `BRC4 = build`.&quot;&quot;&quot;</span>
+        <span class="n">release</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">date</span>
+
+        <span class="k">if</span> <span class="n">date</span> <span class="ow">and</span> <span class="n">date</span> <span class="o">&gt;</span> <span class="n">BRC4_START_DATE</span><span class="p">:</span>
+            <span class="n">release</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;build </span><span class="si">{</span><span class="n">release</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">release</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;pre-BRC4 </span><span class="si">{</span><span class="n">release</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">return</span> <span class="n">release</span></div>
+
+    <span class="k">def</span> <span class="nf">_name_event</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Identify the event name based on the old vs new id lists.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_set</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_set</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;new&quot;</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_set</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_set</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;deletion&quot;</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_set</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_set</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;change&quot;</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_set</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_set</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;split&quot;</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_set</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_set</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;merge&quot;</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_set</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_set</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;mixed&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">UnsupportedEvent</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Event </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">from_set</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">to_set</span><span class="si">}</span><span class="s2"> is not supported&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="StableIdEvent.clean_pairs"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.clean_pairs">[docs]</a>    <span class="k">def</span> <span class="nf">clean_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the empty old pairs when the event is not &#39;new&#39;.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_name_event</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;new&quot;</span><span class="p">:</span>
+            <span class="n">new_pairs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pairs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">pair</span><span class="o">.</span><span class="n">has_old_id</span><span class="p">():</span>
+                    <span class="k">continue</span>
+                <span class="n">new_pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pairs</span> <span class="o">=</span> <span class="n">new_pairs</span></div>
+
+<div class="viewcode-block" id="StableIdEvent.get_name"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve the name for this event, update it beforehand.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name_event</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
+
+<div class="viewcode-block" id="StableIdEvent.add_pairs"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.StableIdEvent.add_pairs">[docs]</a>    <span class="k">def</span> <span class="nf">add_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pairs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Pair</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Provided all the pairs, keep those that are used by this event.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pairs: list of Pair.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">pair</span><span class="o">.</span><span class="n">has_old_id</span><span class="p">()</span> <span class="ow">and</span> <span class="n">pair</span><span class="o">.</span><span class="n">old_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_set</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="n">pair</span><span class="o">.</span><span class="n">has_new_id</span><span class="p">()</span> <span class="ow">and</span> <span class="n">pair</span><span class="o">.</span><span class="n">new_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_set</span>
+            <span class="p">):</span>
+                <span class="c1"># Core db contains an empty line to signify that an old id has been removed</span>
+                <span class="c1"># in merge/split/mixed</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;deletion&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">pair</span><span class="o">.</span><span class="n">has_new_id</span><span class="p">():</span>
+                    <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_pair</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DumpStableIDs"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs">[docs]</a><span class="k">class</span> <span class="nc">DumpStableIDs</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An processor that create events from pairs of ids and can print those events out.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        server: a core server set to a database, to retrieve the data from.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">:</span> <span class="n">CoreServer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a processor for events&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">server</span> <span class="o">=</span> <span class="n">server</span>
+
+<div class="viewcode-block" id="DumpStableIDs.get_history"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.get_history">[docs]</a>    <span class="k">def</span> <span class="nf">get_history</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve all events from a database.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of all events.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">sessions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mapping_sessions</span><span class="p">()</span>
+
+        <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">sessions</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mapping session </span><span class="si">{</span><span class="n">session</span><span class="p">[</span><span class="s1">&#39;release&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pairs</span><span class="p">(</span><span class="n">session</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+            <span class="n">session_events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_events</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">session_events</span><span class="p">:</span>
+                <span class="n">event</span><span class="o">.</span><span class="n">set_release</span><span class="p">(</span><span class="n">session</span><span class="p">[</span><span class="s2">&quot;release&quot;</span><span class="p">])</span>
+                <span class="n">event</span><span class="o">.</span><span class="n">set_date</span><span class="p">(</span><span class="n">session</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">])</span>
+            <span class="n">events</span> <span class="o">+=</span> <span class="n">session_events</span>
+
+        <span class="c1"># Then analyse the pairs to make events</span>
+        <span class="k">return</span> <span class="n">events</span></div>
+
+<div class="viewcode-block" id="DumpStableIDs.print_events"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.print_events">[docs]</a>    <span class="k">def</span> <span class="nf">print_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">StableIdEvent</span><span class="p">],</span> <span class="n">output_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Print events in a format for BRC.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            events: list of events for a given genome.</span>
+<span class="sd">            output_file: where the events will be printed.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">events</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No events to print&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">with</span> <span class="n">output_file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_fh</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+                <span class="n">event_lines</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">brc_format_2</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">event_lines</span><span class="p">:</span>
+                    <span class="n">out_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DumpStableIDs.get_mapping_sessions"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.get_mapping_sessions">[docs]</a>    <span class="k">def</span> <span class="nf">get_mapping_sessions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve the mapping sessions from the connected database.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of sessions, as dicts: {&#39;id: str, &#39;release&#39;: str, &#39;date&#39;: str}.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT mapping_session_id, new_release, created</span>
+<span class="s2">        FROM mapping_session</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">get_cursor</span><span class="p">()</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+        <span class="n">sessions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">db</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+            <span class="n">session</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">db</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;release&quot;</span><span class="p">:</span> <span class="n">db</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="n">db</span><span class="p">[</span><span class="mi">2</span><span class="p">]}</span>
+            <span class="n">sessions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sessions</span></div>
+
+<div class="viewcode-block" id="DumpStableIDs.get_pairs"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.get_pairs">[docs]</a>    <span class="k">def</span> <span class="nf">get_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Pair</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve all pair of ids for a given session.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            session_id: id of a session from the connected database.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of all pairs of ids, as dicts: {&#39;old_id&#39;: str, &#39;new_id&#39;: str}.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT old_stable_id, new_stable_id</span>
+<span class="s2">        FROM stable_id_event</span>
+<span class="s2">        WHERE (old_stable_id != new_stable_id OR old_stable_id IS NULL OR new_stable_id IS NULL)</span>
+<span class="s2">            AND type=&quot;gene&quot;</span>
+<span class="s2">            AND mapping_session_id=</span><span class="si">%s</span>
+<span class="s2">        GROUP BY old_stable_id, new_stable_id, mapping_session_id</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">(</span><span class="n">session_id</span><span class="p">,)</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">get_cursor</span><span class="p">()</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+
+        <span class="n">pairs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Pair</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">db</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+            <span class="n">pair</span> <span class="o">=</span> <span class="n">Pair</span><span class="p">(</span><span class="n">old_id</span><span class="o">=</span><span class="n">db</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">new_id</span><span class="o">=</span><span class="n">db</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span><span class="si">}</span><span class="s2"> stable id events&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pairs</span></div>
+
+<div class="viewcode-block" id="DumpStableIDs.make_events"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.make_events">[docs]</a>    <span class="k">def</span> <span class="nf">make_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pairs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Pair</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a list of pairs, create events.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pairs: list of Pair.</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            A list of events.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">from_list</span><span class="p">,</span> <span class="n">to_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pairs_from_to</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span>
+
+        <span class="c1"># Create events with those 2 dicts</span>
+        <span class="n">events</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">StableIdEvent</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">old_id</span><span class="p">,</span> <span class="n">from_old_list</span> <span class="ow">in</span> <span class="n">from_list</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">old_id</span> <span class="ow">or</span> <span class="n">old_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">from_list</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">StableIdEvent</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">old_id</span><span class="p">]),</span> <span class="nb">set</span><span class="p">(</span><span class="n">from_old_list</span><span class="p">))</span>
+            <span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">from_list</span><span class="p">,</span> <span class="n">to_list</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extend_event</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">from_list</span><span class="p">,</span> <span class="n">to_list</span><span class="p">)</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">add_pairs</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span>
+            <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="c1"># Remaining events should only be new genes</span>
+        <span class="k">for</span> <span class="n">new_id</span><span class="p">,</span> <span class="n">to_new_list</span> <span class="ow">in</span> <span class="n">to_list</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">new_id</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">StableIdEvent</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">to_new_list</span><span class="p">),</span> <span class="nb">set</span><span class="p">([</span><span class="n">new_id</span><span class="p">]))</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">add_pairs</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span>
+            <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="n">stats</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">clean_pairs</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">:</span>
+                <span class="n">stats</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stats</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">for</span> <span class="n">stat</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">stats</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">{</span><span class="n">stat</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">events</span></div>
+
+<div class="viewcode-block" id="DumpStableIDs.get_pairs_from_to"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.get_pairs_from_to">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_pairs_from_to</span><span class="p">(</span><span class="n">pairs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Pair</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">DictToIdsSet</span><span class="p">,</span> <span class="n">DictToIdsSet</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        From a list of Pairs, extract a mapping of all ids from a given old id (from_list),</span>
+<span class="sd">        and a mapping of all ids to a given new id (to_list).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pairs: list of Pairs.</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">             Tuple of 2 values:</span>
+<span class="sd">                from_list</span>
+<span class="sd">                to_list</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">from_list</span><span class="p">:</span> <span class="n">DictToIdsSet</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">to_list</span><span class="p">:</span> <span class="n">DictToIdsSet</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
+            <span class="n">old_id</span> <span class="o">=</span> <span class="n">pair</span><span class="o">.</span><span class="n">old_id</span>
+            <span class="n">new_id</span> <span class="o">=</span> <span class="n">pair</span><span class="o">.</span><span class="n">new_id</span>
+            <span class="k">if</span> <span class="n">old_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">old_id</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">new_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">new_id</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="k">if</span> <span class="n">old_id</span> <span class="ow">in</span> <span class="n">from_list</span><span class="p">:</span>
+                <span class="n">from_list</span><span class="p">[</span><span class="n">old_id</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_id</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">from_list</span><span class="p">[</span><span class="n">old_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">new_id</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">new_id</span> <span class="ow">in</span> <span class="n">to_list</span><span class="p">:</span>
+                <span class="n">to_list</span><span class="p">[</span><span class="n">new_id</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">old_id</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">to_list</span><span class="p">[</span><span class="n">new_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">old_id</span><span class="p">])</span>
+
+        <span class="c1"># Remove empty elements</span>
+        <span class="k">for</span> <span class="n">from_id</span> <span class="ow">in</span> <span class="n">from_list</span><span class="p">:</span>
+            <span class="n">from_list</span><span class="p">[</span><span class="n">from_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">StableIdEvent</span><span class="o">.</span><span class="n">clean_set</span><span class="p">(</span><span class="n">from_list</span><span class="p">[</span><span class="n">from_id</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">to_id</span> <span class="ow">in</span> <span class="n">to_list</span><span class="p">:</span>
+            <span class="n">to_list</span><span class="p">[</span><span class="n">to_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">StableIdEvent</span><span class="o">.</span><span class="n">clean_set</span><span class="p">(</span><span class="n">to_list</span><span class="p">[</span><span class="n">to_id</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">from_list</span><span class="p">,</span> <span class="n">to_list</span></div>
+
+<div class="viewcode-block" id="DumpStableIDs.extend_event"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.DumpStableIDs.extend_event">[docs]</a>    <span class="k">def</span> <span class="nf">extend_event</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">StableIdEvent</span><span class="p">,</span> <span class="n">from_list</span><span class="p">:</span> <span class="n">DictToIdsSet</span><span class="p">,</span> <span class="n">to_list</span><span class="p">:</span> <span class="n">DictToIdsSet</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">StableIdEvent</span><span class="p">,</span> <span class="n">DictToIdsSet</span><span class="p">,</span> <span class="n">DictToIdsSet</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given an event, aggregate ids in the &#39;from&#39; and &#39;to&#39; sets, to connect the whole group.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            event: the event to extend.</span>
+<span class="sd">            from_list: A dict a the from ids, and their corresponding to ids.</span>
+<span class="sd">            to_list: A dict of the to ids, and their corresponding from ids.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A tuple of the extended event, and the from_list and to_list from which the ids that</span>
+<span class="sd">            have been added to the event have been removed.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">extended</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">while</span> <span class="n">extended</span><span class="p">:</span>
+            <span class="n">extended</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="c1"># Extend the group in the to ids</span>
+            <span class="k">for</span> <span class="n">to_id</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">to_set</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">to_id</span> <span class="ow">in</span> <span class="n">to_list</span><span class="p">:</span>
+                    <span class="n">to_from_ids</span><span class="p">:</span> <span class="n">IdsSet</span> <span class="o">=</span> <span class="n">to_list</span><span class="p">[</span><span class="n">to_id</span><span class="p">]</span>
+                    <span class="c1"># Add to the from list?</span>
+                    <span class="k">for</span> <span class="n">to_from_id</span> <span class="ow">in</span> <span class="n">to_from_ids</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">to_from_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">from_set</span><span class="p">:</span>
+                            <span class="n">event</span><span class="o">.</span><span class="n">add_from</span><span class="p">(</span><span class="n">to_from_id</span><span class="p">)</span>
+                            <span class="n">extended</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="c1"># Extend the group in the from ids</span>
+            <span class="k">for</span> <span class="n">from_id</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">from_set</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">from_id</span> <span class="ow">in</span> <span class="n">from_list</span><span class="p">:</span>
+                    <span class="n">from_to_ids</span> <span class="o">=</span> <span class="n">from_list</span><span class="p">[</span><span class="n">from_id</span><span class="p">]</span>
+                    <span class="c1"># Add to the to list?</span>
+                    <span class="k">for</span> <span class="n">from_to_id</span> <span class="ow">in</span> <span class="n">from_to_ids</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">from_to_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">to_set</span><span class="p">:</span>
+                            <span class="n">event</span><span class="o">.</span><span class="n">add_to</span><span class="p">(</span><span class="n">from_to_id</span><span class="p">)</span>
+                            <span class="n">extended</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Clean up</span>
+        <span class="n">from_list</span> <span class="o">=</span> <span class="p">{</span><span class="n">from_id</span><span class="p">:</span> <span class="n">from_list</span><span class="p">[</span><span class="n">from_id</span><span class="p">]</span> <span class="k">for</span> <span class="n">from_id</span> <span class="ow">in</span> <span class="n">from_list</span> <span class="k">if</span> <span class="n">from_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">from_set</span><span class="p">}</span>
+        <span class="n">to_list</span> <span class="o">=</span> <span class="p">{</span><span class="n">to_id</span><span class="p">:</span> <span class="n">to_list</span><span class="p">[</span><span class="n">to_id</span><span class="p">]</span> <span class="k">for</span> <span class="n">to_id</span> <span class="ow">in</span> <span class="n">to_list</span> <span class="k">if</span> <span class="n">to_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">to_set</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">from_list</span><span class="p">,</span> <span class="n">to_list</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../../../../ensembl.io.genomio.events.html#ensembl.io.genomio.events.dump.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entrypoint&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Dump the stable ID events from the information available in a core database.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_server_arguments</span><span class="p">(</span><span class="n">include_database</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_dst_path</span><span class="p">(</span><span class="s2">&quot;--output_file&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Output file&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># Start</span>
+    <span class="n">factory</span> <span class="o">=</span> <span class="n">CoreServer</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
+    <span class="n">factory</span><span class="o">.</span><span class="n">set_database</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">database</span><span class="p">)</span>
+    <span class="n">dumper</span> <span class="o">=</span> <span class="n">DumpStableIDs</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span>
+    <span class="n">events</span> <span class="o">=</span> <span class="n">dumper</span><span class="o">.</span><span class="n">get_history</span><span class="p">()</span>
+    <span class="n">dumper</span><span class="o">.</span><span class="n">print_events</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">output_file</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

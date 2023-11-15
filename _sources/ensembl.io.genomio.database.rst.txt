@@ -1,0 +1,18 @@
+ensembl.io.genomio.database package
+===================================
+
+.. automodule:: ensembl.io.genomio.database
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ensembl.io.genomio.database.factory module
+------------------------------------------
+
+.. automodule:: ensembl.io.genomio.database.factory
+   :members:
+   :undoc-members:
+   :show-inheritance:

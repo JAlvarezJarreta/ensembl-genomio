@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ensembl.brc4.runnable.extract_from_gb &#8212; ensembl-genomio 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/agogo.css?v=cc331ede" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js?v=e031e9a9"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../../index.html">ensembl-genomio 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ensembl.brc4.runnable.extract_from_gb</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!env python3</span>
+<span class="c1"># See the NOTICE file distributed with this work for additional information</span>
+<span class="c1"># regarding copyright ownership.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+
+<span class="kn">import</span> <span class="nn">re</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">eHive</span>
+
+<span class="kn">from</span> <span class="nn">Bio</span> <span class="kn">import</span> <span class="n">SeqIO</span>
+<span class="kn">from</span> <span class="nn">Bio</span> <span class="kn">import</span> <span class="n">GenBank</span>
+
+<span class="kn">from</span> <span class="nn">Bio.Seq</span> <span class="kn">import</span> <span class="n">Seq</span>
+<span class="kn">from</span> <span class="nn">Bio.SeqRecord</span> <span class="kn">import</span> <span class="n">SeqRecord</span>
+<span class="kn">from</span> <span class="nn">Bio.SeqFeature</span> <span class="kn">import</span> <span class="n">SeqFeature</span><span class="p">,</span> <span class="n">FeatureLocation</span>
+<span class="kn">from</span> <span class="nn">BCBio</span> <span class="kn">import</span> <span class="n">GFF</span>
+
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+
+
+<div class="viewcode-block" id="extract_from_gb"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.extract_from_gb.extract_from_gb">[docs]</a><span class="k">class</span> <span class="nc">extract_from_gb</span><span class="p">(</span><span class="n">eHive</span><span class="o">.</span><span class="n">BaseRunnable</span><span class="p">):</span>
+<div class="viewcode-block" id="extract_from_gb.param_defaults"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.extract_from_gb.extract_from_gb.param_defaults">[docs]</a>    <span class="k">def</span> <span class="nf">param_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+
+<div class="viewcode-block" id="extract_from_gb.run"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.extract_from_gb.extract_from_gb.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">accession</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_required</span><span class="p">(</span><span class="s2">&quot;gb_accession&quot;</span><span class="p">)</span>
+        <span class="n">work_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;work_dir&quot;</span><span class="p">)</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;ids_prefix&quot;</span><span class="p">)</span>
+        <span class="n">prod_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;production_name&quot;</span><span class="p">)</span>
+        <span class="n">gb_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;gb_file&quot;</span><span class="p">)</span>
+
+        <span class="n">formatter</span> <span class="o">=</span> <span class="n">FormattedFilesGenerator</span><span class="p">(</span><span class="n">work_dir</span><span class="p">)</span>
+        <span class="n">formatter</span><span class="o">.</span><span class="n">set_prefix</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+        <span class="n">formatter</span><span class="o">.</span><span class="n">set_production_name</span><span class="p">(</span><span class="n">prod_name</span><span class="p">)</span>
+        <span class="n">formatter</span><span class="o">.</span><span class="n">parse_genbank</span><span class="p">(</span><span class="n">gb_file</span><span class="p">)</span>
+
+        <span class="c1"># Output the gff3 file</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;gff3&quot;</span><span class="p">:</span> <span class="n">formatter</span><span class="o">.</span><span class="n">genes_gff</span><span class="p">,</span>
+            <span class="s2">&quot;fasta_dna&quot;</span><span class="p">:</span> <span class="n">formatter</span><span class="o">.</span><span class="n">fasta_dna</span><span class="p">,</span>
+            <span class="s2">&quot;fasta_pep&quot;</span><span class="p">:</span> <span class="n">formatter</span><span class="o">.</span><span class="n">fasta_pep</span><span class="p">,</span>
+            <span class="s2">&quot;seq_region&quot;</span><span class="p">:</span> <span class="n">formatter</span><span class="o">.</span><span class="n">seq_regions</span><span class="p">,</span>
+            <span class="s2">&quot;genome_data&quot;</span><span class="p">:</span> <span class="n">formatter</span><span class="o">.</span><span class="n">genome</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataflow</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="FormattedFilesGenerator"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.extract_from_gb.FormattedFilesGenerator">[docs]</a><span class="k">class</span> <span class="nc">FormattedFilesGenerator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Contains a parser to load data from a file, and output a set of files that follow our schema for input into a core database</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">locations</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;mitochondrion&quot;</span><span class="p">:</span> <span class="s2">&quot;mitochondrial_chromosome&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;apicoplast&quot;</span><span class="p">:</span> <span class="s2">&quot;apicoplast_chromosome&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;chloroplast&quot;</span><span class="p">:</span> <span class="s2">&quot;chloroplast_chromosome&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;chromoplast&quot;</span><span class="p">:</span> <span class="s2">&quot;chromoplast_chromosome&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;cyanelle&quot;</span><span class="p">:</span> <span class="s2">&quot;cyanelle_chromosome&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;leucoplast&quot;</span><span class="p">:</span> <span class="s2">&quot;leucoplast_chromosome&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">allowed_feat_types</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;gene&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;transcript&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;tRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;rRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;CDS&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">=</span> <span class="n">output_dir</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">FileExistsError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">genome</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;genome.json&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq_regions</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;seq_regions.json&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fasta_dna</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;dna.fasta&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fasta_pep</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;pep.fasta&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">genes_gff</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;genes.gff&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="n">prefix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seqs</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="FormattedFilesGenerator.set_prefix"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.extract_from_gb.FormattedFilesGenerator.set_prefix">[docs]</a>    <span class="k">def</span> <span class="nf">set_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Define a prefix to add to the feature IDs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">prefix</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="n">prefix</span></div>
+
+<div class="viewcode-block" id="FormattedFilesGenerator.set_production_name"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.extract_from_gb.FormattedFilesGenerator.set_production_name">[docs]</a>    <span class="k">def</span> <span class="nf">set_production_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prod_name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Define a production_name for the genome</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">prod_name</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prod_name</span> <span class="o">=</span> <span class="n">prod_name</span></div>
+
+<div class="viewcode-block" id="FormattedFilesGenerator.parse_genbank"><a class="viewcode-back" href="../../../../ensembl.brc4.runnable.html#ensembl.brc4.runnable.extract_from_gb.FormattedFilesGenerator.parse_genbank">[docs]</a>    <span class="k">def</span> <span class="nf">parse_genbank</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gb_file</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load a sequence from a Genbank file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">organella</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_organella</span><span class="p">(</span><span class="n">gb_file</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">gb_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">gbh</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">SeqIO</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">gbh</span><span class="p">,</span> <span class="s2">&quot;genbank&quot;</span><span class="p">):</span>
+                <span class="c1"># We don&#39;t want the record description (especially for the fasta file)</span>
+                <span class="n">record</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">record</span><span class="o">.</span><span class="n">organelle</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">organella</span><span class="p">:</span>
+                    <span class="n">record</span><span class="o">.</span><span class="n">organelle</span> <span class="o">=</span> <span class="n">organella</span><span class="p">[</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">seqs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_genome_json</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_genes_gff</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_seq_regions_json</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_fasta_dna</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_organella</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gb_file</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrive the organelle from the genbank file, using the specific GenBank object,</span>
+<span class="sd">        because SeqIO does not support this field</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">organella</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">gb_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">gbh</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">GenBank</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">gbh</span><span class="p">):</span>
+                <span class="n">accession</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">version</span>
+                <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">q</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;/organelle=&quot;</span><span class="p">:</span>
+                        <span class="n">organelle</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                        <span class="n">organella</span><span class="p">[</span><span class="n">record</span><span class="o">.</span><span class="n">version</span><span class="p">]</span> <span class="o">=</span> <span class="n">organelle</span>
+        <span class="k">return</span> <span class="n">organella</span>
+
+    <span class="k">def</span> <span class="nf">_write_fasta_dna</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fasta_dna</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fasta_fh</span><span class="p">:</span>
+            <span class="n">SeqIO</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seqs</span><span class="p">,</span> <span class="n">fasta_fh</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_write_genes_gff</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">peptides</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">genes_gff</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">gff_fh</span><span class="p">:</span>
+            <span class="n">recs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">all_ids</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seqs</span><span class="p">:</span>
+                <span class="n">feats</span> <span class="o">=</span> <span class="p">{}</span>
+
+                <span class="k">for</span> <span class="n">feat</span> <span class="ow">in</span> <span class="n">seq</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">allowed_feat_types</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">gff_qualifiers</span> <span class="o">=</span> <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span>
+                    <span class="n">gff_feat</span> <span class="o">=</span> <span class="n">SeqFeature</span><span class="p">(</span>
+                        <span class="n">location</span><span class="o">=</span><span class="n">feat</span><span class="o">.</span><span class="n">location</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="n">feat</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+                        <span class="n">strand</span><span class="o">=</span><span class="n">feat</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">strand</span><span class="p">,</span>
+                        <span class="n">qualifiers</span><span class="o">=</span><span class="n">gff_qualifiers</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                    <span class="n">gene_name</span> <span class="o">=</span> <span class="n">gff_qualifiers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gene&quot;</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">gene_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">gene_name</span> <span class="o">=</span> <span class="n">gff_qualifiers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;locus_tag&quot;</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+
+                    <span class="k">if</span> <span class="n">gene_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">gene_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">gene_name</span>
+
+                        <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;gene&quot;</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="s2">&quot;pseudo&quot;</span> <span class="ow">in</span> <span class="n">gff_qualifiers</span><span class="p">:</span>
+                                <span class="n">gff_feat</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="s2">&quot;pseudogene&quot;</span>
+                            <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;ID&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gene_id</span>
+                            <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gene_name</span>
+                            <span class="k">if</span> <span class="s2">&quot;gene&quot;</span> <span class="ow">in</span> <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">:</span>
+                                <span class="k">del</span> <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;gene&quot;</span><span class="p">]</span>
+                            <span class="k">if</span> <span class="s2">&quot;locus_tag&quot;</span> <span class="ow">in</span> <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">:</span>
+                                <span class="k">del</span> <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;locus_tag&quot;</span><span class="p">]</span>
+                            <span class="n">feats</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">gene_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">gff_feat</span>
+                            <span class="n">all_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">gene_id</span><span class="p">))</span>
+
+                        <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;CDS&quot;</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="s2">&quot;pseudo&quot;</span> <span class="ow">in</span> <span class="n">gff_qualifiers</span><span class="p">:</span>
+                                <span class="n">gff_feat</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="s2">&quot;exon&quot;</span>
+                            <span class="n">cds_id</span> <span class="o">=</span> <span class="n">gene_id</span> <span class="o">+</span> <span class="s2">&quot;_p1&quot;</span>
+                            <span class="n">tr_id</span> <span class="o">=</span> <span class="n">gene_id</span> <span class="o">+</span> <span class="s2">&quot;_t1&quot;</span>
+                            <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;ID&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cds_id</span>
+                            <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;Parent&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tr_id</span>
+                            <span class="k">if</span> <span class="s2">&quot;gene&quot;</span> <span class="ow">in</span> <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">:</span>
+                                <span class="k">del</span> <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;gene&quot;</span><span class="p">]</span>
+                            <span class="k">if</span> <span class="s2">&quot;locus_tag&quot;</span> <span class="ow">in</span> <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">:</span>
+                                <span class="k">del</span> <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;locus_tag&quot;</span><span class="p">]</span>
+
+                            <span class="c1"># Add fasta to pep fasta file</span>
+                            <span class="k">if</span> <span class="s2">&quot;translation&quot;</span> <span class="ow">in</span> <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">:</span>
+                                <span class="n">peptides</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SeqRecord</span><span class="p">(</span><span class="n">Seq</span><span class="p">(</span><span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;translation&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">id</span><span class="o">=</span><span class="n">cds_id</span><span class="p">))</span>
+
+                            <span class="c1"># Also create a parent transcript for this translation</span>
+                            <span class="n">tr_qualifiers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="n">tr_id</span><span class="p">,</span> <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="n">gene_name</span><span class="p">,</span> <span class="s2">&quot;Parent&quot;</span><span class="p">:</span> <span class="n">gene_id</span><span class="p">}</span>
+                            <span class="n">gff_tr</span> <span class="o">=</span> <span class="n">SeqFeature</span><span class="p">(</span>
+                                <span class="n">location</span><span class="o">=</span><span class="n">feat</span><span class="o">.</span><span class="n">location</span><span class="p">,</span>
+                                <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;mRNA&quot;</span><span class="p">,</span>
+                                <span class="n">strand</span><span class="o">=</span><span class="n">feat</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">strand</span><span class="p">,</span>
+                                <span class="n">qualifiers</span><span class="o">=</span><span class="n">tr_qualifiers</span><span class="p">,</span>
+                            <span class="p">)</span>
+                            <span class="n">feats</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">tr_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">gff_tr</span>
+                            <span class="n">feats</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">cds_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">gff_feat</span>
+                            <span class="n">all_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">tr_id</span><span class="p">))</span>
+                            <span class="n">all_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cds_id</span><span class="p">))</span>
+
+                    <span class="k">elif</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;tRNA&quot;</span><span class="p">,</span> <span class="s2">&quot;rRNA&quot;</span><span class="p">):</span>
+                        <span class="n">feat_name</span> <span class="o">=</span> <span class="n">gff_qualifiers</span><span class="p">[</span><span class="s2">&quot;product&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">gene_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">feat_name</span>
+
+                        <span class="n">parts</span> <span class="o">=</span> <span class="n">gene_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+                            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Shortening gene_id to </span><span class="si">{</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                            <span class="n">gene_id</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">gene_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uniquify_id</span><span class="p">(</span><span class="n">gene_id</span><span class="p">,</span> <span class="n">all_ids</span><span class="p">)</span>
+
+                        <span class="n">feat_id</span> <span class="o">=</span> <span class="n">gene_id</span> <span class="o">+</span> <span class="s2">&quot;_t1&quot;</span>
+                        <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;ID&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">feat_id</span>
+                        <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">feat_name</span>
+                        <span class="n">gff_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;Parent&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gene_id</span>
+
+                        <span class="c1"># Also create a parent gene for this transcript</span>
+                        <span class="n">gene_qualifiers</span> <span class="o">=</span> <span class="p">{</span>
+                            <span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="n">gene_id</span><span class="p">,</span>
+                            <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="n">feat_name</span><span class="p">,</span>
+                        <span class="p">}</span>
+                        <span class="n">gff_gene</span> <span class="o">=</span> <span class="n">SeqFeature</span><span class="p">(</span>
+                            <span class="n">location</span><span class="o">=</span><span class="n">feat</span><span class="o">.</span><span class="n">location</span><span class="p">,</span>
+                            <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;gene&quot;</span><span class="p">,</span>
+                            <span class="n">strand</span><span class="o">=</span><span class="n">feat</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">strand</span><span class="p">,</span>
+                            <span class="n">qualifiers</span><span class="o">=</span><span class="n">gene_qualifiers</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">feats</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">gene_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">gff_gene</span>
+                        <span class="n">feats</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">feat_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">gff_feat</span>
+                        <span class="n">all_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">gene_id</span><span class="p">))</span>
+                        <span class="n">all_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">feat_id</span><span class="p">))</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No ID for allowed feature: </span><span class="si">{</span><span class="n">feat</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="n">rec</span> <span class="o">=</span> <span class="n">SeqRecord</span><span class="p">(</span><span class="n">seq</span><span class="o">.</span><span class="n">seq</span><span class="p">,</span> <span class="n">seq</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                <span class="n">rec</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="n">feats</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                <span class="n">recs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+
+            <span class="n">GFF</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">recs</span><span class="p">,</span> <span class="n">gff_fh</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fasta_pep</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fasta_fh</span><span class="p">:</span>
+                <span class="n">SeqIO</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">peptides</span><span class="p">,</span> <span class="n">fasta_fh</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Warn if some IDs are not unique</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Counter</span><span class="p">(</span><span class="n">all_ids</span><span class="p">))</span>
+            <span class="n">num_duplicates</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">count</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">count</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">num_duplicates</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ID </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> is duplicated </span><span class="si">{</span><span class="n">count</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">}</span><span class="s2"> times&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">num_duplicates</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Some </span><span class="si">{</span><span class="n">num_duplicates</span><span class="si">}</span><span class="s2"> IDs are duplicated&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_uniquify_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene_id</span><span class="p">,</span> <span class="n">all_ids</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure the gene id used is unique,</span>
+<span class="sd">        and append a number otherwise, starting at 2</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">new_id</span> <span class="o">=</span> <span class="n">gene_id</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">while</span> <span class="n">new_id</span> <span class="ow">in</span> <span class="n">all_ids</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">new_id</span><span class="si">}</span><span class="s2"> exists, update&quot;</span><span class="p">)</span>
+            <span class="n">num</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">new_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">gene_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">num</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using </span><span class="si">{</span><span class="n">new_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_id</span>
+
+    <span class="k">def</span> <span class="nf">_write_seq_regions_json</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">json_array</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seqs</span><span class="p">:</span>
+            <span class="n">codon_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_codon_table</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">codon_table</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Warning: No codon table found. Make sure to change the codon table number in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">seq_regions_json</span><span class="si">}</span><span class="s2"> manually if it is not the standard codon table&quot;</span>
+                <span class="p">)</span>
+
+                <span class="n">codon_table</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">codon_table</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">codon_table</span><span class="p">)</span>
+            <span class="n">seq_obj</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">seq</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="s2">&quot;coord_system_level&quot;</span><span class="p">:</span> <span class="s2">&quot;chromosome&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;circular&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">seq</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;topology&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;circular&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;codon_table&quot;</span><span class="p">:</span> <span class="n">codon_table</span><span class="p">,</span>
+                <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="o">.</span><span class="n">seq</span><span class="p">),</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="n">seq</span><span class="o">.</span><span class="n">organelle</span><span class="p">:</span>
+                <span class="n">seq_obj</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_location</span><span class="p">(</span><span class="n">seq</span><span class="o">.</span><span class="n">organelle</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">codon_table</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Warning: &#39;</span><span class="si">{</span><span class="n">seq</span><span class="o">.</span><span class="n">organelle</span><span class="si">}</span><span class="s2">&#39; is an organelle: make sure to change the codon table number in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">seq_regions_json</span><span class="si">}</span><span class="s2"> manually if it is not the standard codon table&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="c1"># Additional attributes for Ensembl</span>
+            <span class="n">seq_obj</span><span class="p">[</span><span class="s2">&quot;added_sequence&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;accession&quot;</span><span class="p">:</span> <span class="n">seq</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="s2">&quot;assembly_provider&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;GenBank&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://www.ncbi.nlm.nih.gov/genbank&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">seq_obj</span><span class="p">[</span><span class="s2">&quot;added_sequence&quot;</span><span class="p">][</span><span class="s2">&quot;assembly_provider&quot;</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Warning: please add the relevant provider name for the assembly in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">seq_regions</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">seq_obj</span><span class="p">[</span><span class="s2">&quot;added_sequence&quot;</span><span class="p">][</span><span class="s2">&quot;assembly_provider&quot;</span><span class="p">][</span><span class="s2">&quot;url&quot;</span><span class="p">]:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: please add the relevant provider url for the assembly in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">seq_regions</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Additional attributes for gene set, if any</span>
+            <span class="c1"># TODO</span>
+
+            <span class="n">json_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seq_obj</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seq_regions</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">seq_fh</span><span class="p">:</span>
+            <span class="n">seq_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">json_array</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_get_codon_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Look at the CDS features to see if they have a codon table</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">feat</span> <span class="ow">in</span> <span class="n">seq</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;CDS&quot;</span><span class="p">:</span>
+                <span class="n">quals</span> <span class="o">=</span> <span class="n">feat</span><span class="o">.</span><span class="n">qualifiers</span>
+                <span class="k">if</span> <span class="s2">&quot;transl_table&quot;</span> <span class="ow">in</span> <span class="n">quals</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">quals</span><span class="p">[</span><span class="s2">&quot;transl_table&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span>
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">_prepare_location</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">organelle</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given an organelle name, returns the SO term corresponding to its location</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">organelle</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">locations</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">locations</span><span class="p">[</span><span class="n">organelle</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unkown organelle: </span><span class="si">{</span><span class="n">organelle</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_write_genome_json</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write a draft for the genome json file</span>
+<span class="sd">        Only the production_name is needed, but the rest of the fields need to be given</span>
+<span class="sd">        for the validation of the json file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">prod_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prod_name</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prod_name</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">genome_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;production_name&quot;</span><span class="p">:</span> <span class="n">prod_name</span><span class="p">,</span>
+                <span class="s2">&quot;taxonomy_id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;assembly&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;accession&quot;</span><span class="p">:</span> <span class="s2">&quot;GCA_000000000&quot;</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+            <span class="s2">&quot;added_seq&quot;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;species&quot;</span><span class="p">][</span><span class="s2">&quot;production_name&quot;</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: please add the relevant production_name for this genome in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">genome</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">seq</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seqs</span><span class="p">]</span>
+        <span class="n">genome_data</span><span class="p">[</span><span class="s2">&quot;added_seq&quot;</span><span class="p">][</span><span class="s2">&quot;region_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ids</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">genome</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">genome_fh</span><span class="p">:</span>
+            <span class="n">genome_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">genome_data</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <p class="caption" role="heading"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">API Setup and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">ensembl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../license.html">License</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+    &#169; Copyright [2016-2023] EMBL-European Bioinformatics Institute.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>
