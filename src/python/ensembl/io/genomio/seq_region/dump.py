@@ -42,6 +42,7 @@ from ensembl.utils.logging import init_logging_with_args
 _ROOT_DIR = Path(__file__).parent / "../../../../../.."
 _DEFAULT_MAP = _ROOT_DIR / "config/external_db_map/default.txt"
 _KARYOTYPE_STRUCTURE = {"TEL": "telomere", "ACEN": "centromere"}
+_SKIPPED_COORD_SYSTEM_LEVEL = {"lrg"}
 
 
 class MapFormatError(Exception):
@@ -130,6 +131,10 @@ def get_seq_regions(session: Session, external_db_map: dict) -> List[SeqRegion]:
 
             if "coord_system_level" not in seq_region:
                 seq_region["coord_system_level"] = coord_system.name
+
+            if seq_region["coord_system_level"] in _SKIPPED_COORD_SYSTEM_LEVEL:
+                logging.debug(f"Skipping coord {seqr.name} with level {seq_region['coord_system_level']}")
+                continue
 
             seq_regions.append(seq_region)
 
