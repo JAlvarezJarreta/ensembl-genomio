@@ -74,7 +74,7 @@ class GFFSimplifier:
     exclude_seq_regions: List = []
     fail_types: Dict[str, int] = {}
     validate_gene_id = True
-    min_id_length = 8
+    min_id_length = 7
     stable_id_prefix = None
     current_stable_id_number: int = 0
     gene_id_cache = set()
