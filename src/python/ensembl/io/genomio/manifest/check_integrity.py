@@ -430,12 +430,13 @@ class IntegrityTool:
         self._check_genome(genome)
 
         # Check gff3
-        if manifest.has_lengths("gff_genes"):
-            gff_genes = manifest.get_lengths("gff_genes")
-            gff_seq_regions = manifest.get_lengths("gff_seq_regions")
-            gff_translations = manifest.get_lengths("gff_translations")
-            gff_all_translations = manifest.get_lengths("gff_all_translations")
-            gff_transposable_elements = manifest.get_lengths("gff_transposable_elements")
+        if manifest.has_lengths("gff3_genes"):
+            logging.info("Check GFF3")
+            gff_genes = manifest.get_lengths("gff3_genes")
+            gff_seq_regions = manifest.get_lengths("gff3_seq_regions")
+            gff_translations = manifest.get_lengths("gff3_translations")
+            gff_all_translations = manifest.get_lengths("gff3_all_translations")
+            gff_transposable_elements = manifest.get_lengths("gff3_transposable_elements")
 
             ann_genes = manifest.get_lengths("ann_genes")
             ann_translations = manifest.get_lengths("ann_translations")
@@ -496,8 +497,8 @@ class IntegrityTool:
         if agp_seqr and seq_lengths:
             self.check_seq_region_lengths(seq_lengths, agp_seqr, "seq_regions json vs agps")
 
-        if manifest.errors:
-            errors_str = "\n".join(manifest.errors)
+        if self.errors:
+            errors_str = "\n".join(self.errors)
             raise InvalidIntegrityError(f"Integrity test failed:\n{errors_str}")
 
     def set_brc_mode(self, brc_mode: bool) -> None:
@@ -653,6 +654,7 @@ class IntegrityTool:
             Error if there are common sequences with difference in ids
             and if the sequences are not consistent in the files.
         """
+        logging.info(f"Compare {name} ({len(seqrs)} vs {len(feats)})")
         comp = self._compare_seqs(seqrs, feats, circular)
 
         common = comp["common"]
@@ -663,6 +665,9 @@ class IntegrityTool:
 
         if common:
             logging.info(f"{len(common)} common elements in {name}")
+        else:
+            self.add_errors(f"No common elements in {name}")
+
         if diff_circular:
             example = diff_circular[0]
             logging.info(f"{len(diff_circular)} differences for circular elements in {name} (e.g. {example})")
@@ -671,8 +676,12 @@ class IntegrityTool:
         if only_seqr:
             # Not an error!
             logging.info(f"{len(only_seqr)} only in seq_region list in {name} (first: {only_seqr[0]})")
+            for seq_name in only_seqr:
+                logging.debug(f"Only in seq_region: {seq_name}")
         if only_feat:
             self.add_errors(f"{len(only_feat)} only in second list in {name} (first: {only_feat[0]})")
+            for seq_name in only_feat:
+                logging.debug(f"Only in second list: {seq_name}")
 
     def _compare_seqs(
         self, seqrs: Dict[str, Any], feats: Dict[str, Any], circular: Optional[Dict[str, Any]] = None
