@@ -402,7 +402,7 @@ class IntegrityTool:
     def add_errors(self, *args: str) -> None:
         """Store the given errors in the list."""
         for error in args:
-            self.errors += error
+            self.errors.append(error)
 
     def check_integrity(self):
         """Load files listed in the manifest.json and check the integrity.
