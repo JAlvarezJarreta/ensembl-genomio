@@ -15,6 +15,7 @@
 """Compute stats from the current genome files associated with the manifest."""
 
 import json
+import logging
 from os import PathLike
 from pathlib import Path
 from shutil import which
@@ -68,8 +69,9 @@ class manifest_stats:
 
     def __init__(self, manifest_dir: str, accession: Optional[str], datasets_bin: Optional[str]):
         self.manifest = f"{manifest_dir}/manifest.json"
+        self.error_file = f"{manifest_dir}/stats_error.txt"
         self.accession: Optional[str] = accession
-        self.error = False
+        self.errors: List[str] = []
         if datasets_bin is None:
             datasets_bin = "datasets"
         self.datasets_bin = datasets_bin
@@ -100,9 +102,14 @@ class manifest_stats:
         with Path(stats_path).open("w") as stats_out:
             stats_out.write("\n".join(stats))
 
-        # Die if there were errors in stats comparison
-        if self.error:
-            raise StatsError(f"Stats count errors, check the file {stats_path}")
+        self.print_error()
+    
+    def print_error(self) -> None:
+        """Print errors in a separate file if there are any."""
+        if self.errors:
+            logging.info(f"Found some stats differences, see {self.error_file}")
+            with Path(self.error_file).open("w") as error_out:
+                error_out.write("\n".join(self.errors))
 
     def get_manifest(self) -> Dict:
         """Get the files metadata from the manifest json file.
@@ -378,8 +385,7 @@ class manifest_stats:
 
             if prep_count != ncbi_count:
                 diff = prep_count - ncbi_count
-                stats.append(f"DIFF gene count for {count_map}: {prep_count} - {ncbi_count} = {diff}")
-                self.error = True
+                self.errors.append(f"DIFF gene count for {count_map}: {prep_count} - {ncbi_count} = {diff}")
             else:
                 stats.append(f"Same count for {count_map}: {prep_count}")
 
