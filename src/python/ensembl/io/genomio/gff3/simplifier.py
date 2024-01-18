@@ -28,7 +28,7 @@ import logging
 from os import PathLike
 from pathlib import Path
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from BCBio import GFF
 from Bio.SeqRecord import SeqRecord
@@ -78,7 +78,7 @@ class GFFSimplifier:
     stable_id_prefix = None
     current_stable_id_number: int = 0
 
-    def __init__(self, genome_path: Optional[PathLike] = None, make_missing_stable_ids: bool = False):
+    def __init__(self, genome_path: Optional[PathLike] = None, make_missing_stable_ids: bool = True):
         biotypes_json = files(ensembl.io.genomio.data.gff3) / "biotypes.json"
         self._biotypes = get_json(biotypes_json)
         self.records = Records()
@@ -88,6 +88,7 @@ class GFFSimplifier:
             with Path(genome_path).open("r") as genome_fh:
                 self.genome = json.load(genome_fh)
         self.make_missing_stable_ids: bool = make_missing_stable_ids
+        self.madeup_ids: Set[str] = set()
 
     def simpler_gff3(self, in_gff_path: PathLike) -> None:
         """Loads a GFF3 from INSDC and rewrites it in a simpler version, whilst also writing a
@@ -657,13 +658,21 @@ class GFFSimplifier:
 
         # In case the gene id is not valid, use the GeneID
         if not self.valid_id(new_gene_id):
-            logging.warning(f"Gene id is not valid: {new_gene_id}")
+            logging.debug(f"Gene id is not valid: {new_gene_id}")
             qual = gene.qualifiers
             if "Dbxref" in qual:
                 for xref in qual["Dbxref"]:
                     (db, value) = xref.split(":")
                     if db == "GeneID":
                         new_gene_id = f"{db}_{value}"
+                        num = 2
+                        # Make sure we make a unique ID
+                        while (new_gene_id in self.madeup_ids) and num < 100:
+                            new_gene_id = f"{db}_{value}_{num}"
+                        if new_gene_id in self.madeup_ids:
+                            raise ValueError(f"Cannot use existing ID {new_gene_id}")
+                        self.madeup_ids.add(new_gene_id)
+
                         logging.debug(f"Using GeneID {new_gene_id} for stable_id instead of {gene.id}")
                         return new_gene_id
 
