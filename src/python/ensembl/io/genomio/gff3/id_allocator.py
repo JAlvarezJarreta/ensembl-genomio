@@ -34,7 +34,7 @@ class IDAllocator:
 
     # Multiple parameters to automate various fixes
     validate_gene_id = True
-    min_id_length = 8
+    min_id_length = 7
     current_id_number: int = 0
     make_missing_stable_ids: bool = True
     prefix = "TMP_"
